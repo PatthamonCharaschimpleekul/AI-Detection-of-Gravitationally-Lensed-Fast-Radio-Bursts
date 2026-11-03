@@ -284,6 +284,24 @@ Report instead:
 
 Sanity check on real data (no labels): run the final model on CHIME Catalog 1 repeaters and the published lensed candidate (Chang et al. 2025) and report scores — as a consistency check, not as a detection claim.
 
+### 7.1 Validating a null result: "no lens" vs "we missed it"
+
+A non-detection only means something if we can show the pipeline would have found a lens that was there. Checks:
+
+1. **Injection–recovery.** Inject fake echoes with known Δt, μ, S/N into the *same real CHIME data* we search, run the full pipeline, and measure ε(Δt, μ, S/N). This ε is the one in the f_CO limit (Sec. 5.3), so where the pipeline is weak, the limit is automatically weak.
+2. **Blind injections.** A script (or a teammate) injects an unknown number of fakes and seals the answer key; we search, then unseal. This stops thresholds being tuned toward the answer.
+3. **False-alarm rate from real data.** Pairs known not to be lensed (bursts from different sources, or time-shifted pairings, like LIGO time slides) give the real background.
+4. **Controls.** Must flag or explain: the Chang et al. 2025 candidate. Must reject: plasma-lensed FRB 20201124A and naturally multi-component bursts. Baselines and learned models must agree; disagreements are investigated before any conclusion.
+5. **Expected count before searching.** Compute N_exp at f_CO = 1 first. If N_exp ≪ 1, a non-detection says nothing; if N_exp ≫ 3, it is a real constraint.
+6. **Injection realism.** Too-clean injections inflate ε and make the limit falsely tight, so injections span several distortion levels and the limit is reported as a range.
+
+| Injections recovered? | Real detection? | Meaning |
+|---|---|---|
+| Yes (high ε) | No | No lenses in that range → f_CO limit |
+| No (low ε) | No | Pipeline or data not sensitive → no conclusion |
+| Yes | Yes | Candidate → compare with false-alarm rate, follow up |
+| No | Yes | Suspicious, likely artefact → investigate |
+
 ---
 
 ## 8. Risks and mitigations

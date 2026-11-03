@@ -1,0 +1,95 @@
+%% AI Detection of Gravitationally Lensed FRBs — agreed pipeline
+%% Details: Project_Description.md (section numbers in labels)
+flowchart TD
+
+    subgraph P1["Phase 1 · Semi-synthetic data (Sec. 5)"]
+        D1[("CHIME/FRB Catalog 1–2<br/>waterfalls + tables")]
+        D2[("Real repeater bursts<br/>CHIME, FAST, Blinkverse")]
+        D3[("Real off-pulse noise + RFI")]
+        POP["Population stats<br/>rate, DM, fluence, width<br/>z from DM (Macquart)"]
+        LENS["Lens simulator<br/>galaxy: SIS/SIE, Δt days–months<br/>compact: point mass, Δt µs–ms"]
+        PROP["Per-image propagation<br/>ΔDM, ΔRM, scattering, scintillation"]
+        IMP["Impostors<br/>plasma lensing, multi-component bursts"]
+        D1 --> POP --> LENS --> PROP
+    end
+
+    subgraph P2["Phase 2 · Injection & labelling"]
+        INJ["Inject lensed copies onto real noise<br/>CHIME band 400–800 MHz"]
+        LAB["Labels<br/>Track A: echo / none / impostor<br/>Track B: lensed / repeat / unrelated"]
+        SPLIT["Split by source<br/>train / val / test + stress-test set"]
+        INJ --> LAB --> SPLIT
+    end
+
+    D1 --> INJ
+    D3 --> INJ
+    PROP --> INJ
+    IMP --> INJ
+
+    subgraph P34["Phase 3–4 · Models & benchmark (Sec. 6)"]
+        subgraph TRK_A["Track A · compact lens, one burst"]
+            A1["Autocorrelation baseline"]
+            A2["Single-input CNN"]
+        end
+        subgraph TRK_B["Track B · galaxy lens, burst pairs"]
+            TRAIN["Training<br/>physics-based augmentation<br/>+ hard negatives (real repeats)"]
+            BENCH["Benchmark ladder, same test set<br/>1 Cross-correlation · 2 Likelihood ratio<br/>3 GBM on features · 4 2-channel CNN<br/>5 Classic Siamese<br/>6 Siamese + feature-map fusion ★<br/>7 Siamese + cross-attention"]
+            TRAIN --> BENCH
+        end
+        subgraph TRK_C["Track C · lensed repeater timing"]
+            C1["Constant Δt + flux-ratio<br/>likelihood test"]
+        end
+    end
+
+    SPLIT --> A1
+    SPLIT --> A2
+    SPLIT --> TRAIN
+    D2 --> TRAIN
+    D2 --> C1
+
+    subgraph V["Validation (Sec. 7)"]
+        INJREC["Injection–recovery on real CHIME data<br/>→ ε(Δt, μ, S/N)"]
+        BLIND["Blind injections"]
+        FAR["False-alarm rate<br/>mismatched / time-shifted pairs"]
+        CTRL["Controls<br/>Chang+25 candidate · FRB 20201124A"]
+        BOUND["Likelihood-ratio limit<br/>+ gain vs S/N"]
+    end
+
+    A1 --> INJREC
+    A2 --> INJREC
+    BENCH --> INJREC
+    BENCH --> BOUND
+    INJREC --> BLIND --> FAR --> CTRL
+
+    subgraph S["Search real CHIME data"]
+        CASC{"Statistical method<br/>decisive?"}
+        ML["Learned model<br/>on ambiguous cases"]
+        POST["Posterior odds<br/>= LR × prior from τ"]
+        EVID["Combine evidence<br/>monitoring · host imaging · Track C"]
+        CASC -- "no" --> ML --> POST
+        CASC -- "yes" --> POST
+        POST --> EVID
+    end
+
+    CTRL --> CASC
+    C1 --> EVID
+
+    subgraph P5["Phase 5 · Cosmology (Sec. 5.1–5.3)"]
+        YIELD["RQ1 · Yield<br/>N_exp = Σ τ_i ε_i"]
+        FCO["RQ3 · f_CO(M) limit ★ priority 1<br/>f_CO &lt; 3 / Σ τ_i ε_i"]
+        H0["RQ3 · H₀ forecast only<br/>σ/H₀ ≈ lens-model error / √N"]
+    end
+
+    INJREC -. "ε" .-> YIELD
+    INJREC -. "ε" .-> FCO
+    EVID --> FCO
+    EVID --> H0
+
+    OUT["Deliverables<br/>open-source pipeline · benchmark table<br/>ε maps · forecast paper"]
+    YIELD --> OUT
+    FCO --> OUT
+    H0 --> OUT
+
+    classDef data fill:#e8f1fb,stroke:#3b78c2
+    classDef star fill:#fff4d6,stroke:#c99a1a,stroke-width:2px
+    class D1,D2,D3 data
+    class BENCH,FCO star

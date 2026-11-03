@@ -3,4 +3,5 @@
 Research project: using AI to detect gravitationally lensed fast radio bursts (FRBs).
 
 - [Project_Description.md](Project_Description.md) — full project plan: motivation, research questions, pipeline, model design, evaluation, timeline
+- [pipeline.mmd](pipeline.mmd) — Mermaid diagram of the agreed pipeline
 - [Definitions_of_specific_terms.md](Definitions_of_specific_terms.md) — glossary with references
