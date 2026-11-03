@@ -53,7 +53,7 @@ Every term is defined plainly, then tied to *why it matters in this project*. Re
 
 **Dark matter** — Non-luminous mass (~85% of matter) inferred from galaxy rotation, lensing, CMB, structure formation. Its particle nature is unknown.
 
-**Compact dark matter / primordial black holes (PBHs)** — One candidate: dark matter made of black holes (or other compact objects) formed in the early universe, spanning many masses. Microlensing/echo searches with FRBs directly constrain the PBH fraction f_PBH: Kalra et al. (2022) used the *absence* of sub-ms repeats in CHIME Catalog 1; Ho et al. (2023) forecasted constraints for future surveys (BURSTT). **Our null-result question:** if we find no ms-echoes, what does that rule out?
+**Compact dark matter / primordial black holes (PBHs)** — One candidate: dark matter made of black holes (or other compact objects) formed in the early universe, spanning many masses. Microlensing/echo searches with FRBs directly constrain the PBH fraction f_PBH: Krochek & Kovetz (2022) used the *absence* of sub-ms repeats in CHIME Catalog 1; Ho et al. (2023) forecasted constraints for future surveys (BURSTT). **Our null-result question:** if we find no ms-echoes, what does that rule out?
 
 **Redshift (z)** — Cosmological stretch of light; z = 1 means the universe was half its current size when the light left.
 
@@ -98,7 +98,7 @@ Building blocks: galaxy strong-lensing optical depth τ ≈ 0.3–1% of high-z s
 Support for trying: cross-correlation's failure modes are documented (different DMs/scattering between echoes; plasma-lensing impostors). Siamese/contrastive pair models dominate other "same-object, changed-presentation" tasks (image retrieval, face verification, lensed-quasar pair mining). Direct precedent for FRB pairs is thin (Caltech de Mello/Law study; AAS-235 abstract) ⇒ well-motivated, low-crowding methodological niche. The honest test: identical simulated truth sets, metrics = recall at fixed FAR on (a) echo vs intrinsic-repeat discrimination and (b) lensed vs plasma-lensed discrimination.
 
 **Q3 — Cosmology yield and the meaning of a null result?**
-With ~N lensed FRBs (delay + host DM + (future) lens imaging): H₀ precision scales ~1/√N; Li et al. 2018 argued ~1% is reachable with ~10 well-modelled systems; even 5% would be an independent late-universe datapoint bearing directly on the Hubble tension (H0LiCOW 73.3 vs Planck 67.4). A **null result** is also publishable physics: absence of ms-µs echoes in a sample of K FRBs constrains the compact-dark-matter fraction f_PBH(M) (precedent: Kalra et al. 2022 on Catalog 1; Ho et al. 2023 forecasts) and caps τ, testing small-scale structure predictions.
+With ~N lensed FRBs (delay + host DM + (future) lens imaging): H₀ precision scales ~1/√N; Li et al. 2018 argued ~1% is reachable with ~10 well-modelled systems; even 5% would be an independent late-universe datapoint bearing directly on the Hubble tension (H0LiCOW 73.3 vs Planck 67.4). A **null result** is also publishable physics: absence of ms-µs echoes in a sample of K FRBs constrains the compact-dark-matter fraction f_PBH(M) (precedent: Krochek & Kovetz 2022 on Catalog 1; Ho et al. 2023 forecasts) and caps τ, testing small-scale structure predictions.
 
 ---
 
@@ -120,7 +120,7 @@ With ~N lensed FRBs (delay + host DM + (future) lens imaging): H₀ precision sc
 - Li et al. 2018, Strongly lensed repeating FRBs as precision cosmological probes — [arXiv:1708.06357](https://arxiv.org/abs/1708.06357), [Nat. Commun.](https://www.nature.com/articles/s41467-018-06303-0)
 - Connor et al. 2023, Stellar prospects for FRB gravitational lensing — [arXiv:2206.14310](https://arxiv.org/html/2206.14310v1)
 - Ho et al. 2023, Future constraints on dark matter with lensed FRBs (BURSTT) — [arXiv:2304.04990](https://arxiv.org/html/2304.04990v1), [ApJ](https://iopscience.iop.org/article/10.3847/1538-4357/accb9e)
-- Kalra et al. 2022, Constraining PBH dark matter with CHIME — [ADS](https://ui.adsabs.harvard.edu/abs/2022PhRvD.105j3528K)
+- Krochek & Kovetz 2022, Constraining PBH dark matter with CHIME — [ADS](https://ui.adsabs.harvard.edu/abs/2022PhRvD.105j3528K)
 - Chang et al. 2025, A lensed FRB candidate in the first CHIME/FRB Catalogue — [MNRAS-L](https://academic.oup.com/mnrasl/article/537/1/L61/7922865)
 - Pastor-Marazuela et al. 2025, FRBs & the radio perspective on multi-messenger lensing (review) — [PMC](https://pmc.ncbi.nlm.nih.gov/articles/PMC11982924/)
 - Wong et al. 2020 (H0LiCOW XIII), 2.4% H₀ from lensed quasars — [MNRAS](https://academic.oup.com/mnras/article/498/1/1420/5849454); TDCOSMO XXIII (2026) — [A&A](https://www.aanda.org/articles/aa/full_html/2026/02/aa56411-25/aa56411-25.html)

@@ -195,7 +195,7 @@ $$
 N_{\text{exp}} < 3 \;\Rightarrow\; f_{CO}(M) < \frac{3}{\sum_i \tau_i(f_{CO}{=}1, M)\,\varepsilon_i}
 $$
 
-The mass range is bounded below by time resolution (Δt must be resolvable) and above by the data window length and the largest detectable flux ratio. Compare the resulting limit with existing CHIME limits (Kalra et al. 2022).
+The mass range is bounded below by time resolution (Δt must be resolvable) and above by the data window length and the largest detectable flux ratio. Compare the resulting limit with existing CHIME limits (Krochek & Kovetz 2022; Leung et al. 2022).
 
 ---
 
