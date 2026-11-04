@@ -1,9 +1,9 @@
 # Combine evidence
 
-**Purpose:** Monitoring, host imaging and Track C timing.
+**Purpose:** Timing consistency, monitoring and (future) lens imaging.
 
 **Inputs:** Candidates.
 
-**Outputs:** Final candidate list or null result.
+**Outputs:** Final candidate list or validated null.
 
 Diagram box in [pipeline.mmd](/pipeline.mmd). Large files go in `data/` or `outputs/` inside this folder (gitignored).

@@ -1,95 +1,91 @@
-%% AI Detection of Gravitationally Lensed FRBs — agreed pipeline
+%% AI Detection of Gravitationally Lensed FRBs — single paper: lensed repeaters (Tracks B + C)
 %% Details: Project_Description.md (section numbers in labels)
 flowchart TD
 
-    subgraph P1["Phase 1 · Semi-synthetic data (Sec. 5)"]
-        D1[("CHIME/FRB Catalog 1–2<br/>waterfalls 0.98 ms + tables<br/>Cat 1 baseband: 140 bursts, 2.56 µs")]
-        D2[("Real repeater bursts<br/>CHIME, FAST, Blinkverse")]
+    subgraph P1["Phase 1 · Semi-synthetic lensed repeaters (Sec. 5)"]
+        D1[("CHIME/FRB Catalog 2<br/>981 bursts from 83 repeaters<br/>dynamic spectra 0.98 ms + table")]
+        D2[("FAST / Blinkverse repeaters<br/>augmentation only")]
         D3[("Real off-pulse noise + RFI")]
-        POP["Population stats<br/>rate, DM, fluence, width<br/>z from DM (Macquart)"]
-        LENS["Lens simulator<br/>galaxy: SIS/SIE, Δt days–months<br/>compact: point mass, Δt µs–ms"]
+        D4[("Catalog 2 exposure<br/>when CHIME watched each position")]
+        LENS["Galaxy lens population<br/>SIS/SIE, Δt hours–months, μ<br/>z from DM (Macquart)"]
+        BUILD["Lensed repeater constructor<br/>image B = image A delayed by Δt, scaled by μ ratio"]
         PROP["Per-image propagation<br/>ΔDM, ΔRM, scattering, scintillation"]
+        OBS["Observation filter<br/>exposure + detection threshold"]
         IMP["Impostors<br/>plasma lensing, diffractive scintillation,<br/>multi-component bursts"]
-        D1 --> POP --> LENS --> PROP
+        LENS --> BUILD --> PROP --> OBS
     end
 
+    D1 --> BUILD
+    D4 --> OBS
+
     subgraph P2["Phase 2 · Injection & labelling"]
-        INJ["Inject lensed copies onto real noise<br/>CHIME band 400–800 MHz"]
-        LAB["Labels<br/>Track A: echo / none / impostor<br/>Track B: lensed / repeat / unrelated"]
+        INJ["Inject copies onto real noise<br/>CHIME band 400–800 MHz"]
+        LAB["Labels<br/>pairs: lensed copy / repeat / unrelated / impostor<br/>sources: lensed / unlensed"]
         SPLIT["Split by source<br/>train / val / test + stress-test set"]
         INJ --> LAB --> SPLIT
     end
 
-    D1 --> INJ
+    OBS --> INJ
     D3 --> INJ
-    PROP --> INJ
     IMP --> INJ
 
     subgraph P34["Phase 3–4 · Models & benchmark (Sec. 6)"]
-        subgraph TRK_A["Track A · compact lens, one burst (baseband)"]
-            A1["Autocorrelation baseline"]
-            A2["Single-input CNN<br/>bar: Kader/Leung sensitivity"]
-        end
-        subgraph TRK_B["Track B · galaxy lens, burst pairs"]
+        subgraph TRK_B["Track B · pair morphology"]
             TRAIN["Training<br/>physics-based augmentation<br/>+ hard negatives (real repeats)"]
             BENCH["Benchmark ladder, same test set<br/>1 Cross-correlation · 2 Likelihood ratio<br/>3 GBM on features · 4 2-channel CNN<br/>5 Classic Siamese<br/>6 Siamese + feature-map fusion ★<br/>7 Siamese + cross-attention"]
             TRAIN --> BENCH
         end
-        subgraph TRK_C["Track C · lensed repeater timing"]
-            C1["Constant Δt + flux-ratio<br/>likelihood test"]
+        subgraph TRK_C["Track C · source timing"]
+            C1["Shared Δt + flux-ratio likelihood<br/>weighted by pair scores<br/>background: time-scrambled lists"]
         end
+        BENCH --> C1
     end
 
-    SPLIT --> A1
-    SPLIT --> A2
     SPLIT --> TRAIN
     D2 --> TRAIN
-    D2 --> C1
 
     subgraph V["Validation (Sec. 7)"]
-        INJREC["Injection–recovery on real CHIME data<br/>→ ε(Δt, μ, S/N) ★ Track A primary result"]
+        INJREC["Injection–recovery on real repeaters<br/>→ ε(Δt, μ, burst rate, exposure) ★"]
         BLIND["Blind injections"]
-        FAR["False-alarm rate<br/>mismatched / time-shifted pairs"]
-        CTRL["Controls<br/>flag: FRB 20190308C candidate<br/>reject: FRB 20201124A · FRB20190624B/0417C"]
-        BOUND["Likelihood-ratio limit<br/>+ gain vs S/N"]
+        FAR["False-alarm rate<br/>scrambled lists, cross-source pairs"]
+        CTRL["Controls<br/>flag: FRB 20190308C<br/>reject: FRB 20201124A, scintillation"]
+        BOUND["Reference likelihood ratios<br/>(simplified + neural)<br/>+ gain vs S/N"]
+        UNBLIND["Freeze + tag pipeline<br/>→ unblind"]
     end
 
-    A1 --> INJREC
-    A2 --> INJREC
-    BENCH --> INJREC
+    C1 --> INJREC
     BENCH --> BOUND
-    INJREC --> BLIND --> FAR --> CTRL
+    INJREC --> BLIND --> FAR --> CTRL --> UNBLIND
 
-    subgraph S["Search real CHIME data"]
+    subgraph S["Search: 83 Catalog 2 repeaters"]
         CASC{"Statistical method<br/>decisive?"}
-        ML["Learned model<br/>on ambiguous cases"]
+        ML["Learned model<br/>on ambiguous pairs"]
         POST["Posterior odds<br/>= LR × prior from τ"]
-        EVID["Combine evidence<br/>monitoring · host imaging · Track C"]
+        EVID["Combine evidence<br/>timing · monitoring · lens imaging"]
         CASC -- "no" --> ML --> POST
         CASC -- "yes" --> POST
         POST --> EVID
     end
 
-    CTRL --> CASC
-    C1 --> EVID
+    UNBLIND --> CASC
 
-    subgraph P5["Phase 5 · Cosmology (Sec. 5.1–5.3)"]
-        YIELD["RQ1 · Yield<br/>N_exp = Σ τ_i ε_i"]
-        FCO["RQ3 · f_CO(M) limit (secondary)<br/>f_CO &lt; 3 / Σ τ_i ε_i"]
-        H0["RQ3 · H₀ forecast only<br/>σ/H₀ ≈ lens-model error / √N"]
+    subgraph P5["Forecasts (Sec. 5.1–5.2)"]
+        NEXP["N_exp for Catalog 2<br/>computed before unblinding"]
+        YIELD["Yield forecast<br/>CHIME as observed · longer CHIME-like · BURSTT-like"]
+        H0["H₀ · discussion only"]
     end
 
+    INJREC -. "ε" .-> NEXP
     INJREC -. "ε" .-> YIELD
-    INJREC -. "ε" .-> FCO
-    EVID --> FCO
-    EVID --> H0
+    NEXP -.-> UNBLIND
+    YIELD --> H0
 
-    OUT["Deliverables<br/>open-source pipeline · benchmark table<br/>ε maps · forecast paper"]
+    OUT["Paper (MNRAS)<br/>benchmark · validated search · forecasts<br/>code + data on Zenodo"]
+    EVID --> OUT
     YIELD --> OUT
-    FCO --> OUT
-    H0 --> OUT
+    BOUND --> OUT
 
     classDef data fill:#e8f1fb,stroke:#3b78c2
     classDef star fill:#fff4d6,stroke:#c99a1a,stroke-width:2px
-    class D1,D2,D3 data
+    class D1,D2,D3,D4 data
     class BENCH,INJREC star

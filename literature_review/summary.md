@@ -6,7 +6,7 @@ Searched 2026-11-03. Based on abstracts and arXiv metadata of the papers in [REA
 
 **No, not found.**
 - FRB machine learning so far classifies **repeater vs non-repeater** sources (Kharel et al. 2026 on Catalog 2 dynamic spectra; Madheshwaran et al. 2025 on baseband; several feature-based studies). None addresses lensing.
-- FRB lensing searches use **autocorrelation or cross-correlation**, not learned models (Kader et al. 2022; Chang et al. 2024; Krochek & Kovetz 2022).
+- FRB lensing searches use **autocorrelation or cross-correlation**, not learned models (Kader et al. 2022; Chang et al. 2025; Krochek & Kovetz 2022).
 - The closest precedent is in **gravitational waves**: lensed-pair identification with DenseNet/XGBoost (Goyal et al. 2021) and, in 2026, a **Siamese ResNet that fuses paired features by absolute difference and element-wise product** (Zhang et al. 2026). That is essentially our Track B design, applied to another messenger. It supports the Siamese choice, and their noted need for "detector-domain adaptation" matches our real-noise concern.
 - The de Mello/Law (Caltech) Siamese FRB study listed in the glossary was **not found** by these searches; treat it as unverified.
 
@@ -33,7 +33,7 @@ Searched 2026-11-03. Based on abstracts and arXiv metadata of the papers in [REA
 ## Q4. How does CHIME search for lensing echoes? (Track A baseline)
 
 - **Coherent:** dechannelise baseband voltages to 1.25 ns, compute the time-lag autocorrelation of the electric field, and look for a significant peak (interference fringe). Scintillation produced a false candidate that had to be ruled out (Kader et al. 2022). Decoherence from scattering screens is modelled with a two-screen model (Leung et al. 2022).
-- **Incoherent / intensity:** autocorrelation of the intensity time series with simulation-calibrated thresholds (Chang et al. 2024; Krochek & Kovetz 2022, who also set a per-burst flux-ratio threshold).
+- **Incoherent / intensity:** autocorrelation of the intensity time series with simulation-calibrated thresholds (Chang et al. 2025; Krochek & Kovetz 2022, who also set a per-burst flux-ratio threshold).
 
 **Effect on plan:** Track A baselines are intensity autocorrelation (Krochek; Chang) and, if baseband is used, comparison with the coherent method's published sensitivity. Scintillation is a known impostor to add to Phase 1 impostors.
 

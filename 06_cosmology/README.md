@@ -1,9 +1,9 @@
-# Phase 5 · Cosmology
+# Forecasts
 
-**Purpose:** Turn ε and search results into physics (Project_Description.md Sec. 5.1–5.3).
+**Purpose:** Turn ε into expected yields (Project_Description.md Sec. 5.1–5.2).
 
-**Inputs:** ε maps, search results.
+**Inputs:** ε maps, exposure.
 
-**Outputs:** Yield, f_CO limit, H₀ forecast.
+**Outputs:** N_exp for Catalog 2; yield forecasts; H₀ discussion.
 
 Diagram box in [pipeline.mmd](/pipeline.mmd). Large files go in `data/` or `outputs/` inside this folder (gitignored).

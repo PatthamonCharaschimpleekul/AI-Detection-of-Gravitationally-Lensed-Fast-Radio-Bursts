@@ -1,6 +1,6 @@
 # Controls
 
-**Purpose:** Chang+25 candidate must be flagged or explained; FRB 20201124A and multi-component bursts must be rejected.
+**Purpose:** FRB 20190308C must be flagged or explained; plasma-lensed FRB 20201124A, scintillating and multi-component bursts must be rejected.
 
 **Inputs:** Real bursts.
 

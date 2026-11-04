@@ -1,8 +1,8 @@
 # Blind injections
 
-**Purpose:** Unknown number of fakes with a sealed answer key.
+**Purpose:** An unknown number of real repeaters turned into lensed ones, with a sealed answer key.
 
-**Inputs:** Real data, models.
+**Inputs:** Real repeaters, models.
 
 **Outputs:** Blind recovery report.
 

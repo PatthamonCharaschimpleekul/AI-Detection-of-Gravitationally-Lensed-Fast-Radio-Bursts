@@ -1,9 +1,9 @@
 # Injection–recovery
 
-**Purpose:** Inject known echoes into the real search data, run the full pipeline.
+**Purpose:** Turn real repeaters into lensed ones with known Δt and flux ratio, run the full pipeline.
 
-**Inputs:** Real data, models.
+**Inputs:** Real repeaters, models, exposure.
 
-**Outputs:** ε(Δt, μ, S/N).
+**Outputs:** ε(Δt, μ, burst rate, exposure).
 
 Diagram box in [pipeline.mmd](/pipeline.mmd). Large files go in `data/` or `outputs/` inside this folder (gitignored).

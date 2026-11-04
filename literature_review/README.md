@@ -13,7 +13,7 @@
 | Krochek2021_PBH_CHIME_cat1 | Krochek & Kovetz 2022 (PRD), *Constraining PBH DM with CHIME FRBs* | [2112.03721](https://arxiv.org/abs/2112.03721) | **Tried Track A on public Catalog 1 data; ~1 ms resolution too coarse for a meaningful bound** |
 | Kader2022_CHIME_baseband_lens_search | Kader et al. 2022, *High-time-resolution search … lens interferometry with CHIME/FRB* | [2204.06014](https://arxiv.org/abs/2204.06014) | Coherent autocorrelation search, 172 bursts at 1.25 ns; Track A baseline |
 | Leung2022_PBH_CHIME_lens_interferometry | Leung et al. 2022 (PRD 106, 043017), *Constraining PBHs using FRB lens interferometry* | [2204.06001](https://arxiv.org/abs/2204.06001) | Current CHIME limit: f ≲ 0.8 at ~10⁻³ M☉ |
-| Chang2024_lensed_candidate_CHIME_cat1 | Chang et al. 2024/25 (MNRAS Letters), *A lensed FRB candidate in the first CHIME/FRB Catalogue* | [2406.19654](https://arxiv.org/abs/2406.19654) | FRB 20190308C, 3.4σ, autocorrelation on Catalog 1; a control for our pipeline |
+| Chang2024_lensed_candidate_CHIME_cat1 | Chang et al. 2025 (MNRAS Letters 537, L61), *A lensed FRB candidate in the first CHIME/FRB Catalogue* | [2406.19654](https://arxiv.org/abs/2406.19654) | FRB 20190308C, 3.4σ, autocorrelation on Catalog 1; a control for our pipeline |
 | Connor2022_stellar_prospects_FRB_lensing | Connor & Ravi 2022, *Stellar prospects for FRB gravitational lensing* | [2206.14310](https://arxiv.org/abs/2206.14310) | Rates across delays µs–years; input to RQ1 |
 | Ho2023_future_DM_constraints_lensed_FRB | Ho et al. 2023, *Future constraints on DM with lensed FRBs (BURSTT)* | [2304.04990](https://arxiv.org/abs/2304.04990) | ~24 lensed / 1700 FRBs per year forecast for BURSTT |
 | **Cosmology with lensed repeaters** | | | |
