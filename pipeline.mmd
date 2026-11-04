@@ -3,13 +3,13 @@
 flowchart TD
 
     subgraph P1["Phase 1 · Semi-synthetic data (Sec. 5)"]
-        D1[("CHIME/FRB Catalog 1–2<br/>waterfalls + tables")]
+        D1[("CHIME/FRB Catalog 1–2<br/>waterfalls 0.98 ms + tables<br/>Cat 1 baseband: 140 bursts, 2.56 µs")]
         D2[("Real repeater bursts<br/>CHIME, FAST, Blinkverse")]
         D3[("Real off-pulse noise + RFI")]
         POP["Population stats<br/>rate, DM, fluence, width<br/>z from DM (Macquart)"]
         LENS["Lens simulator<br/>galaxy: SIS/SIE, Δt days–months<br/>compact: point mass, Δt µs–ms"]
         PROP["Per-image propagation<br/>ΔDM, ΔRM, scattering, scintillation"]
-        IMP["Impostors<br/>plasma lensing, multi-component bursts"]
+        IMP["Impostors<br/>plasma lensing, diffractive scintillation,<br/>multi-component bursts"]
         D1 --> POP --> LENS --> PROP
     end
 
@@ -26,9 +26,9 @@ flowchart TD
     IMP --> INJ
 
     subgraph P34["Phase 3–4 · Models & benchmark (Sec. 6)"]
-        subgraph TRK_A["Track A · compact lens, one burst"]
+        subgraph TRK_A["Track A · compact lens, one burst (baseband)"]
             A1["Autocorrelation baseline"]
-            A2["Single-input CNN"]
+            A2["Single-input CNN<br/>bar: Kader/Leung sensitivity"]
         end
         subgraph TRK_B["Track B · galaxy lens, burst pairs"]
             TRAIN["Training<br/>physics-based augmentation<br/>+ hard negatives (real repeats)"]
@@ -47,10 +47,10 @@ flowchart TD
     D2 --> C1
 
     subgraph V["Validation (Sec. 7)"]
-        INJREC["Injection–recovery on real CHIME data<br/>→ ε(Δt, μ, S/N)"]
+        INJREC["Injection–recovery on real CHIME data<br/>→ ε(Δt, μ, S/N) ★ Track A primary result"]
         BLIND["Blind injections"]
         FAR["False-alarm rate<br/>mismatched / time-shifted pairs"]
-        CTRL["Controls<br/>Chang+25 candidate · FRB 20201124A"]
+        CTRL["Controls<br/>flag: FRB 20190308C candidate<br/>reject: FRB 20201124A · FRB20190624B/0417C"]
         BOUND["Likelihood-ratio limit<br/>+ gain vs S/N"]
     end
 
@@ -75,7 +75,7 @@ flowchart TD
 
     subgraph P5["Phase 5 · Cosmology (Sec. 5.1–5.3)"]
         YIELD["RQ1 · Yield<br/>N_exp = Σ τ_i ε_i"]
-        FCO["RQ3 · f_CO(M) limit ★ priority 1<br/>f_CO &lt; 3 / Σ τ_i ε_i"]
+        FCO["RQ3 · f_CO(M) limit (secondary)<br/>f_CO &lt; 3 / Σ τ_i ε_i"]
         H0["RQ3 · H₀ forecast only<br/>σ/H₀ ≈ lens-model error / √N"]
     end
 
@@ -92,4 +92,4 @@ flowchart TD
     classDef data fill:#e8f1fb,stroke:#3b78c2
     classDef star fill:#fff4d6,stroke:#c99a1a,stroke-width:2px
     class D1,D2,D3 data
-    class BENCH,FCO star
+    class BENCH,INJREC star
