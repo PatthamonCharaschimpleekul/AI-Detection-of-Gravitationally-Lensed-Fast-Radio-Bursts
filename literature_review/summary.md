@@ -1,6 +1,6 @@
 # Literature summary: four plan-changing questions
 
-Searched 2026-11-03. Based on abstracts and arXiv metadata of the papers in [README.md](README.md); full texts are downloaded but not yet read in detail.
+Searched 2026-11-03. Based on abstracts and arXiv metadata of the papers in [README.md](README.md); full texts were read in detail on 2026-11-04 — see "Corrections after full-text check" at the bottom.
 
 ## Q1. Has an ML classifier for lensed vs intrinsic-repeat FRBs been published?
 
@@ -43,7 +43,16 @@ Searched 2026-11-03. Based on abstracts and arXiv metadata of the papers in [REA
 - **Lensed repeaters (Track C):** the fixed delay pattern is the accepted test (Li et al. 2018), but confirmation also requires matching radio and optical image positions.
 - **Yields:** Ho et al. 2023 forecast ~24 lensed FRBs per year out of ~1700 for BURSTT-2048; Connor & Ravi 2022 cover rates from µs to years.
 
-## Proposed changes to Project_Description.md (not yet applied)
+## Corrections after full-text check (2026-11-04)
+
+A review against the full texts found errors in this summary; the corrected versions are now in Project_Description.md and the glossary:
+- **Q2 option 1 was wrong:** 0.1–100 M☉ is *not* a mass gap. Kader et al. 2022 searched 10⁻⁴–10⁴ M☉ (lags from ns to 100 ms) on the same baseband data. The real gap is sensitivity (Leung et al. reach only f ≲ 0.8 near 10⁻³ M☉), and the public release has 140 bursts versus their 172.
+- **Q2 option 2 needs a condition:** Krochek & Kovetz's "a few times Catalog 1" assumes full instrument time resolution, so a ~1 ms Catalog 2 does not meet it.
+- **Q1:** Zhang et al. 2026 use exactly our fusion (|f₁ − f₂| + element-wise product); novelty must rest on the FRB domain, nuisances, benchmark and ε→limit chain.
+- **Not supported by the texts, and not used:** a Connor & Ravi claim about EROS/HSC above 10² M☉ (that comparison is in Ho et al. 2023); FRB 20150422A as the first localized repeater (it is FRB 20121102A, per general knowledge; verify with Chatterjee et al. 2017).
+- **Reinstated after verification (2026-11-04, Kader full text):** the recovery threshold "χ² ≳ 40 and εΓ ≳ 0.03" **is** in Kader et al. 2022 (Fig. 8 caption; mean relative-magnification error ~23%) — usable as the coherent-baseline reference for Track A. Kader's own count is 172 events / **103** independent sightlines (Sec. III.A); "114 sightlines" is Leung et al.'s figure.
+
+## Proposed changes to Project_Description.md (applied 2026-11-04, with the corrections above)
 
 1. Track A priority: replace "f_CO limit from public Catalog 1 data" with one of the options under Q2 (recommend option 1 + 3).
 2. Add scintillation as an impostor (Phase 1 step 5, Sec. 7.1 controls).

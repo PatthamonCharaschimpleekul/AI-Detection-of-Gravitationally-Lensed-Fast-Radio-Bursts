@@ -67,7 +67,7 @@ Every term is defined plainly, then tied to *why it matters in this project*. Re
 
 **Contrastive loss** — Pulls same-pair embeddings together, pushes different-pair ones apart up to a margin; the standard training objective for a Siamese net.
 
-**Cross-correlation (our baseline)** — Slide one waveform against another, integrating the product; optimal for *identical* signals differing only by shift + stationary additive noise. Weaknesses that a learned metric can beat: differing DMs (before/during dedispersion), scattering tails, scintillation, sub-sample delays, magnification-modified shapes. Prior art: auto-correlation searches of FRB data for echoes (e.g., high-time-resolution CHIME searches); a Caltech undergraduate study (de Mello, mentor C. Law) and an AAS abstract already tested Siamese-style pair comparison on simulated lensed FRBs — so the idea has *some* pedigree but **no mature peer-reviewed benchmark ⇒ our novelty space**.
+**Cross-correlation (our baseline)** — Slide one waveform against another, integrating the product; optimal for *identical* signals differing only by shift + stationary additive noise. Weaknesses that a learned metric can beat: differing DMs (before/during dedispersion), scattering tails, scintillation, sub-sample delays, magnification-modified shapes. Prior art: autocorrelation searches of FRB data for echoes (Kader et al. 2022 on baseband; Chang et al. 2024 on Catalog 1). No ML lensed-pair classifier for FRBs was found (search of 3 Nov 2026, abstract level). The closest method precedent is lensed gravitational-wave pair identification (Goyal et al. 2021; a Siamese network with the same fusion as ours in Zhang et al. 2026) ⇒ **our novelty space is the FRB domain and its propagation nuisances, not the architecture**.
 
 **CNN (convolutional neural network)** — The usual encoder inside a Siamese net for image-like inputs (dynamic spectra).
 
@@ -85,17 +85,19 @@ Every term is defined plainly, then tied to *why it matters in this project*. Re
 
 **Westerbork (WSRT) and host-galaxy follow-up** — High-sensitivity arrays used to localize and monitor repeaters.
 
-**Case study — FRB 20220529A**: the first repeating FRB localized to a host (z ≈ 0.9, spiral galaxy; CHIME-led work, 2025). Its burst regularities attracted a **gravitational-lens interpretation** from some groups, while a 2026 CHIME+Westerbork monitoring result (steadily declining DM, depolarization) favours an **expanding-nebula environment** instead. *Unresolved → this is precisely the discrimination our model automates.*
+**Case study — FRB 20190308C**: a 3.4σ lensed candidate in Catalog 1, found by autocorrelation of multi-peak bursts and modelled with a Chang–Refsdal lens (Chang et al.). Unconfirmed. *This is precisely the discrimination our model automates.*
+
+**Case study — FRB 20220529A**: a repeating FRB at z = 0.1839 monitored by CHIME for 3.2 years (Pandhi et al. 2026). Its steadily declining DM and variable RM favour a young expanding supernova remnant; no lensing interpretation was found in the literature. *For this project it is an example of intrinsic DM drift over months — why ΔDM between two bursts is a useful but imperfect feature.*
 
 ---
 
 ## 6. Scientific backing for the three research questions
 
 **Q1 — How many lensed FRBs should a CHIME-like survey detect per year?**
-Building blocks: galaxy strong-lensing optical depth τ ≈ 0.3–1% of high-z sources; CHIME detects ~500–1000 FRBs/yr; a fraction are at z ≳ 0.5 where τ peaks; repeater echoes boost event counts by (µ₁+µ₂)… Estimates in the literature: a handful of strongly lensed FRBs per year at most for current all-sky instruments (Connor et al. 2023 worked out rates across delay scales µs–yr; Ho et al. 2023 computed τ for each Catalog-1 FRB; Li et al. 2018 projected ~10 lensed *repeaters* over a decade+ with SKA). Chang et al. (2025) already report **one lensed candidate found hiding in CHIME Catalog 1** — the per-year scale of the answer is therefore plausibly ~1–5 for galaxy lenses, with dedicated high-time-resolution analyses adding the ms-scale compact-object population. *Our answer refines that with the repeater-echo term and a realistic detection pipeline.*
+Building blocks: galaxy strong-lensing optical depth τ ≈ 0.3–1% of high-z sources; CHIME detects ~500–1000 FRBs/yr; a fraction are at z ≳ 0.5 where τ peaks; repeater echoes boost event counts by (µ₁+µ₂)… Estimates in the literature: a handful of strongly lensed FRBs per year at most for current all-sky instruments (Connor & Ravi 2022 worked out rates across delay scales µs–yr; Ho et al. 2023 computed τ for each Catalog-1 FRB; Li et al. 2018 projected ~10 lensed *repeaters* over a decade+ with SKA). Chang et al. (2025) already report **one lensed candidate found hiding in CHIME Catalog 1** — the per-year scale of the answer is therefore plausibly ~1–5 for galaxy lenses, with dedicated high-time-resolution analyses adding the ms-scale compact-object population. *Our answer refines that with the repeater-echo term and a realistic detection pipeline.*
 
 **Q2 — Can a Siamese network beat cross-correlation?**
-Support for trying: cross-correlation's failure modes are documented (different DMs/scattering between echoes; plasma-lensing impostors). Siamese/contrastive pair models dominate other "same-object, changed-presentation" tasks (image retrieval, face verification, lensed-quasar pair mining). Direct precedent for FRB pairs is thin (Caltech de Mello/Law study; AAS-235 abstract) ⇒ well-motivated, low-crowding methodological niche. The honest test: identical simulated truth sets, metrics = recall at fixed FAR on (a) echo vs intrinsic-repeat discrimination and (b) lensed vs plasma-lensed discrimination.
+Support for trying: cross-correlation's failure modes are documented (different DMs/scattering between echoes; plasma-lensing impostors). Siamese/contrastive pair models dominate other "same-object, changed-presentation" tasks (image retrieval, face verification, lensed-quasar pair mining). No direct precedent for FRB pairs was found; the closest is a Siamese network for lensed gravitational-wave pairs (Zhang et al. 2026) ⇒ well-motivated, low-crowding methodological niche in the FRB domain. The honest test: identical simulated truth sets, metrics = recall at fixed FAR on (a) echo vs intrinsic-repeat discrimination and (b) lensed vs impostor discrimination (plasma lensing, scintillation, multi-component bursts).
 
 **Q3 — Cosmology yield and the meaning of a null result?**
 With ~N lensed FRBs (delay + host DM + (future) lens imaging): H₀ precision scales ~1/√N; Li et al. 2018 argued ~1% is reachable with ~10 well-modelled systems; even 5% would be an independent late-universe datapoint bearing directly on the Hubble tension (H0LiCOW 73.3 vs Planck 67.4). A **null result** is also publishable physics: absence of ms-µs echoes in a sample of K FRBs constrains the compact-dark-matter fraction f_PBH(M) (precedent: Krochek & Kovetz 2022 on Catalog 1; Ho et al. 2023 forecasts) and caps τ, testing small-scale structure predictions.
@@ -108,7 +110,8 @@ With ~N lensed FRBs (delay + host DM + (future) lens imaging): H₀ precision sc
 2. **Plasma lensing is chromatic; gravity is not.**
 3. **Simulation realism sets everything.** Bias in the assumed FRB population or lens model propagates straight into Q1–Q3.
 4. **Base rates are tiny** (τ ~ 10⁻³): false-alarm control, not raw accuracy, is the headline number.
-5. **One published lensed candidate (Chang et al. 2025) and one contested repeater (FRB 20220529A)** mean the field is live — good timing, but verify current status before writing any proposal text (see Sec. 5).
+5. **One published, unconfirmed lensed candidate (FRB 20190308C, Chang et al.)** means the field is live — good timing, but verify current status before writing any proposal text (see Sec. 5).
+6. **Scintillation mimics echoes.** In the CHIME baseband search, the only notable false candidates were caused by diffractive scintillation (Kader et al. 2022).
 
 ---
 
@@ -118,14 +121,19 @@ With ~N lensed FRBs (delay + host DM + (future) lens imaging): H₀ precision sc
 - Updating the first CHIME/FRB catalog — [arXiv:2311.00111](https://arxiv.org/abs/2311.00111); CHIME/FRB second catalog: [IOP](https://iopscience.iop.org/article/10.3847/1538-4365/ae3828), one-off vs repeater subpopulations: [arXiv:2610.18710](https://arxiv.org/html/2610.18710v1)
 - CHIME/FRB open data: [chime-frb.ca](https://chime-frb.ca/)
 - Li et al. 2018, Strongly lensed repeating FRBs as precision cosmological probes — [arXiv:1708.06357](https://arxiv.org/abs/1708.06357), [Nat. Commun.](https://www.nature.com/articles/s41467-018-06303-0)
-- Connor et al. 2023, Stellar prospects for FRB gravitational lensing — [arXiv:2206.14310](https://arxiv.org/html/2206.14310v1)
+- Connor & Ravi 2022, Stellar prospects for FRB gravitational lensing — [arXiv:2206.14310](https://arxiv.org/html/2206.14310v1)
 - Ho et al. 2023, Future constraints on dark matter with lensed FRBs (BURSTT) — [arXiv:2304.04990](https://arxiv.org/html/2304.04990v1), [ApJ](https://iopscience.iop.org/article/10.3847/1538-4357/accb9e)
 - Krochek & Kovetz 2022, Constraining PBH dark matter with CHIME — [ADS](https://ui.adsabs.harvard.edu/abs/2022PhRvD.105j3528K)
 - Chang et al. 2025, A lensed FRB candidate in the first CHIME/FRB Catalogue — [MNRAS-L](https://academic.oup.com/mnrasl/article/537/1/L61/7922865)
 - Pastor-Marazuela et al. 2025, FRBs & the radio perspective on multi-messenger lensing (review) — [PMC](https://pmc.ncbi.nlm.nih.gov/articles/PMC11982924/)
 - Wong et al. 2020 (H0LiCOW XIII), 2.4% H₀ from lensed quasars — [MNRAS](https://academic.oup.com/mnras/article/498/1/1420/5849454); TDCOSMO XXIII (2026) — [A&A](https://www.aanda.org/articles/aa/full_html/2026/02/aa56411-25/aa56411-25.html)
 - Pandhi et al. 2026, A steadily declining DM for FRB 20220529A (expanding nebula) — [arXiv:2602.22309](https://arxiv.org/abs/2602.22309), [ApJ-L](https://iopscience.iop.org/article/10.3847/2041-8213/ae52f8)
-- de Mello (Caltech SFP/CURJ), Siamese networks for FRB pair similarity — [CURJ](https://curj.caltech.edu/2021-06-26/are-all-fast-radio-bursts-the-same/)
+- Kader et al. 2022, High-time-resolution search for compact objects using FRB lens interferometry with CHIME/FRB — [arXiv:2204.06014](https://arxiv.org/abs/2204.06014)
+- Leung et al. 2022, Constraining PBHs using FRB gravitational-lens interferometry with CHIME/FRB — [arXiv:2204.06001](https://arxiv.org/abs/2204.06001)
+- Sand et al. 2024, Morphology of 137 FRBs down to microsecond timescales — [arXiv:2408.13215](https://arxiv.org/abs/2408.13215)
+- Wucknitz et al. 2021, Cosmology with gravitationally lensed repeating FRBs (A&A 645, A44) — [arXiv:2004.11643](https://arxiv.org/abs/2004.11643)
+- Goyal et al. 2021, Rapid identification of strongly lensed GW events with machine learning — [arXiv:2106.12466](https://arxiv.org/abs/2106.12466)
+- Zhang et al. 2026, Time-domain deep learning for pairwise identification of strongly lensed GW candidates (Siamese) — [arXiv:2605.29510](https://arxiv.org/abs/2605.29510)
 - Sky at Night explainer on FRB lensing — [link](https://www.skyatnightmagazine.com/space-science/fast-radio-bursts-gravitational-lensing)
 
-*Status: glossary compiled 1 Nov 2026 from the sources above. Verify claims marked "proposed/contested" against the live literature before quoting in the proposal.*
+*Status: glossary compiled 1 Nov 2026; corrected 4 Nov 2026 against full texts (literature_review/). Verify claims marked "proposed/contested" against the live literature before quoting in the proposal.*

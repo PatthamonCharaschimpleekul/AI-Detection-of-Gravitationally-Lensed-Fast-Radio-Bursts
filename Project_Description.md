@@ -80,7 +80,12 @@ The work splits into three tracks because the lens scales lead to different data
 - **Track C — timing of lensed repeaters.** Task: "do this source's arrival times show a constant delay with a constant flux ratio?"
 
 **Priorities.** Lensing is rare, so the project is ordered by what can produce a real result now:
-1. **Track A on real CHIME data → an actual f_CO(M) limit.** A concrete, publishable physics result within this project, even with zero detections.
+1. **Track A: method first, limit second.**
+   - **Primary result:** detection efficiency ε(Δt, μ, S/N) and false-alarm rate of learned vs autocorrelation searches on the public **Catalog 1 baseband data (140 bursts, 2.56 µs)**, compared with the published sensitivity of the CHIME coherent search.
+   - **The gap is sensitivity, not mass coverage.** Kader et al. 2022 already searched 10⁻⁴–10⁴ M☉ (lags from ns to 100 ms) on 172 baseband bursts, and Leung et al. 2022 reached only f ≲ 0.8 near 10⁻³ M☉. What can be new is higher ε at the same false-alarm rate.
+   - **A real-data f_CO(M) limit is secondary.** With 140 public bursts (fewer than their 172) it may come out weaker than Leung et al. unless ε improves substantially.
+   - **Not possible:** a meaningful bound from the public ~1 ms Catalog 1 intensity data; Krochek & Kovetz 2022 tried.
+   - **Fallback:** Catalog 2 (4539 bursts) for higher masses. Krochek & Kovetz's "a few times Catalog 1" estimate assumes full instrument time resolution, so a limit from ~1 ms Catalog 2 data would be weaker and confined to high masses.
 2. **Track B (Siamese) on semi-synthetic data.** Methodology and readiness for next-generation surveys (CHIME Outriggers, CHORD, DSA-2000, SKA), which will detect many more FRBs.
 3. **H₀ as a forecast only** (Sec. 5.2 explains why).
 
@@ -106,7 +111,10 @@ Steps:
    - **Galaxy scale:** singular isothermal sphere / SIE lens population with optical depth τ(z); output image count, Δt (days–months), magnifications.
    - **Compact scale:** point-mass lenses of mass M with fraction f_CO; output Δt (µs–ms), flux ratio.
 4. Per-image propagation differences: ΔDM, ΔRM, different scattering time and scintillation pattern.
-5. Impostors: plasma-lensed bursts (chromatic delays and magnification).
+5. Impostors:
+   - plasma-lensed bursts (chromatic delays and magnification);
+   - **diffractive scintillation**, which produced the only notable false candidates in the CHIME baseband search (a ~0.1 ms-lag excess in FRB20190624B and FRB20190417C; Kader et al. 2022);
+   - naturally multi-component bursts, with sub-structure as narrow as 23 µs (Sand et al. 2024).
 6. Fully synthetic bursts (parametric pulse models) only as a control set, to check that results do not depend on the particular real templates.
 
 Caution: FAST data are at ~1.25 GHz, CHIME at 400–800 MHz. Bursts from other telescopes are rescaled to the CHIME band and resolution, and every result is also reported on CHIME-only data.
@@ -116,7 +124,7 @@ Caution: FAST data are at ~1.25 GHz, CHIME at 400–800 MHz. Bursts from other t
 
 1. Inject lensed copies into dynamic spectra at CHIME resolution (400–800 MHz) on **real off-pulse data and RFI**; Gaussian noise only as a control.
 2. Labels:
-   - Track A: `echo` / `no echo` / `plasma impostor`
+   - Track A: `echo` / `no echo` / `impostor` (plasma lensing, scintillation, multi-component)
    - Track B pairs: `lensed` / `intrinsic repeat` / `unrelated`
 3. **Split by source, not by pair**, into train / validation / test, so no source appears in more than one split.
 4. Keep a separate "realism stress test" set with nuisance parameters wider than in training.
@@ -167,6 +175,8 @@ $$
 $$
 
 An FRB gives Δt to ~ms over days (δΔt/Δt ~ 10⁻⁸), so the first term vanishes and the lens model (~5–10% per system for lensed quasars today, plus the mass-sheet degeneracy) dominates. For N systems, σ(H₀)/H₀ ≈ (per-system lens-model error)/√N.
+
+An alternative route exists: with coherent timing of a lensed *repeater* over years, combining the delay with its time derivative can remove the lens-model uncertainty (Wucknitz et al. 2021). It needs ns–µs timing sustained over years and sub-mas astrometry — follow-up data outside this project — and no lensed repeater is confirmed yet. Even with HST imaging, Li et al. 2018 still budget ~0.8% for mass modelling and ~2% for line-of-sight structure. Under this project's assumptions the lens model therefore still dominates.
 
 **What Δt alone cannot do:** measuring H₀ also needs arcsecond image positions (VLBI or CHIME Outriggers), imaging of the lens galaxy for the mass model, and redshifts z_l and z_s. These are outside this project, so the H₀ part is a forecast: how large N must be, and which follow-up is needed.
 
@@ -228,6 +238,14 @@ Two inputs pass through **the same encoder (shared weights)**, each is compresse
 
 This keeps what is good about Siamese networks (shared weights, symmetry, learned similarity) and removes the late-fusion weakness.
 
+**Prior art and what is new.** The same fusion — a shared encoder with |f₁ − f₂| and element-wise product — was used for lensed gravitational-wave pairs by Zhang et al. 2026, and Goyal et al. 2021 screened lensed GW pairs with DenseNet/XGBoost. The novelty here is therefore **not** the fusion design but:
+- the FRB domain;
+- per-image propagation nuisances (scattering, scintillation, ΔDM, ΔRM) built into training;
+- the benchmark ladder against physics baselines;
+- the ε → yield / f_CO chain.
+
+The literature search of 2026-11-03 (abstract level) found no ML lensed-pair classifier for FRBs.
+
 **Tolerance to propagation effects comes from the data, not from a special loss.** A model only learns to ignore the distortions it sees in training, so lensed positive pairs are built with **physics-based augmentation**: each image independently gets its own scattering time, scintillation pattern, small ΔDM and ΔRM, and RFI. The model then learns which differences are "same burst, different path" (the idea behind SimCLR-style augmentation, with physically motivated transforms). The margin in any contrastive term sets how much difference is allowed, and it can be tuned.
 
 **Hard negatives drive training.** Intrinsic repeats from the same source in the same activity window, chosen to look as similar as possible, are oversampled. Random unrelated bursts are easy and teach little.
@@ -255,14 +273,14 @@ This keeps what is good about Siamese networks (shared weights, symmetry, learne
 - Optical/IR imaging of the host can reveal a foreground lens galaxy.
 - A lensed repeater shows the constant-delay pattern of Track C.
 
-**Deployment as a cascade.** Cross-correlation / likelihood ratio (1–2) runs first on every candidate pair: fast, explainable, and expected to be enough at high S/N. Only ambiguous pairs (low S/N or strongly distorted) go to the learned model. This keeps results explainable where possible and spends compute only where learning can help.
+**Deployment as a cascade.** Cross-correlation / likelihood ratio (1–2) runs first on every candidate pair: fast, explainable, and expected to be enough at high S/N. Only ambiguous pairs (low S/N or strongly distorted) go to the learned model. This keeps results explainable where possible and spends compute only where learning can help. Goyal et al. 2021 used ML the same way for lensed GW pairs: seconds per pair, versus hours to days for a full Bayesian comparison.
 
 Possible outcomes and what each means:
 - **6 or 7 beats 1–5:** the Siamese design is justified; the comparison with 5 shows why fusion matters.
 - **2 or 3 matches 6:** physics already captures the signal; the paper is a systematic benchmark plus a forecast. Still publishable.
 - **Everything fails on the stress-test set:** the simulation is too optimistic or CHIME resolution is too coarse — the forecast becomes "current instruments are not enough", which is also a result.
 
-**Track A model:** single-input CNN on the dynamic spectrum, compared against auto-correlation (and published CHIME baseband methods where applicable).
+**Track A model:** single-input CNN on the dynamic spectrum, compared against intensity autocorrelation (Krochek & Kovetz 2022; Chang et al. 2024). **Bar to beat:** the published sensitivity of the CHIME coherent baseband search (Kader et al. 2022; Leung et al. 2022); our ε at the same false-alarm rate is compared with theirs.
 
 **Track C:** likelihood test for a constant delay Δt with constant flux ratio in a source's arrival-time list. Optional comparison: a set Transformer that takes every burst of one source as a token (burst embedding + arrival time + fluence) and flags pairs with a shared Δt and flux ratio — kept only if it beats the likelihood test.
 
@@ -280,7 +298,7 @@ Report instead:
 - **Distance to the fundamental limit:** each method's performance relative to the exact likelihood ratio on simulation.
 - **Calibration** of predicted probabilities (reliability diagram).
 - **Robustness:** performance on the stress-test set with wider nuisances and on Gaussian-vs-real noise backgrounds.
-- **Impostor rejection:** how often plasma-lensed bursts are called gravitationally lensed.
+- **Impostor rejection:** how often plasma-lensed, scintillating or multi-component bursts are called gravitationally lensed.
 
 Sanity check on real data (no labels): run the final model on CHIME Catalog 1 repeaters and the published lensed candidate (Chang et al. 2025) and report scores — as a consistency check, not as a detection claim.
 
@@ -291,7 +309,7 @@ A non-detection only means something if we can show the pipeline would have foun
 1. **Injection–recovery.** Inject fake echoes with known Δt, μ, S/N into the *same real CHIME data* we search, run the full pipeline, and measure ε(Δt, μ, S/N). This ε is the one in the f_CO limit (Sec. 5.3), so where the pipeline is weak, the limit is automatically weak.
 2. **Blind injections.** A script (or a teammate) injects an unknown number of fakes and seals the answer key; we search, then unseal. This stops thresholds being tuned toward the answer.
 3. **False-alarm rate from real data.** Pairs known not to be lensed (bursts from different sources, or time-shifted pairings, like LIGO time slides) give the real background.
-4. **Controls.** Must flag or explain: the Chang et al. 2025 candidate. Must reject: plasma-lensed FRB 20201124A and naturally multi-component bursts. Baselines and learned models must agree; disagreements are investigated before any conclusion.
+4. **Controls.** Must flag or explain: the Chang et al. 2025 candidate. Must reject: plasma-lensed FRB 20201124A, the scintillating bursts FRB20190624B and FRB20190417C (Kader et al. 2022), and naturally multi-component bursts. Baselines and learned models must agree; disagreements are investigated before any conclusion.
 5. **Expected count before searching.** Compute N_exp at f_CO = 1 first. If N_exp ≪ 1, a non-detection says nothing; if N_exp ≫ 3, it is a real constraint.
 6. **Injection realism.** Too-clean injections inflate ε and make the limit falsely tight, so injections span several distortion levels and the limit is reported as a range.
 
@@ -309,16 +327,17 @@ A non-detection only means something if we can show the pipeline would have foun
 | Risk | Effect | Mitigation |
 |---|---|---|
 | Simulation too clean | Model learns shortcuts, fails on real data | Semi-synthetic data (real bursts, real repeats, real noise), per-image propagation differences, stress-test set |
-| Telescope domain mismatch (FAST 1.25 GHz vs CHIME 400–800 MHz) | Model learns telescope, not physics | Rescale to CHIME band and resolution; report CHIME-only results too |
+| Telescope domain mismatch (FAST 1.25 GHz vs CHIME 400–800 MHz) | Model learns telescope, not physics | Rescale to CHIME band and resolution; report CHIME-only results too. Related evidence: Zhang et al. 2026 report accuracy falling from ~96% to ~84% between detector noise models and note a need for domain adaptation (different noise levels, not a clean train/test shift experiment) |
 | Data leakage | Over-optimistic scores | Split by source |
 | Class imbalance | Misleading metrics | Report FPR-based metrics and false claims per year |
 | Similar-looking intrinsic repeats | High false-positive rate | Hard-negative mining, Bayes prior from τ, multi-evidence final decision |
 | Lensed and repeat pairs fundamentally indistinguishable at CHIME resolution | No method can succeed on morphology alone | Measure the likelihood-ratio limit first; lean on timing (Track C) and follow-up evidence |
 | Deep model costly and hard to explain | Results hard to trust | Cascade: statistical methods first, learned model only for ambiguous pairs |
 | Model beaten by baselines | "AI not needed" | Framed as benchmark in RQ2; still publishable |
-| Prior work already did this | Lower novelty | Literature check before Phase 3 (de Mello/Law Siamese study, AAS abstract, CHIME lensing searches) |
+| Prior work already did this | Lower novelty | Same fusion design exists for lensed GW pairs (Zhang et al. 2026): claim novelty on FRB domain, propagation nuisances, benchmark and ε→limit chain; cite Zhang et al. 2026 and Goyal et al. 2021; re-check for an FRB ML lensed-pair classifier before submission |
+| Fewer public baseband bursts (140) than the CHIME search used (172) | Real-data f_CO limit may be weaker than Leung et al. 2022 | Make ε and the method comparison the primary Track A result; the limit is secondary |
 | Lens-model error dominates H₀ | Forecast looks weak | State it explicitly; that limitation is itself useful guidance |
-| CHIME time resolution too coarse | Little morphology to learn | Test at several resolutions; note what baseband data would add |
+| CHIME time resolution too coarse | Little morphology to learn | Track A uses baseband (2.56 µs); for Track B, test at several resolutions and note what baseband data would add |
 
 ---
 
@@ -327,7 +346,7 @@ A non-detection only means something if we can show the pipeline would have foun
 | Month | Work | Milestone |
 |---|---|---|
 | 1 | Literature check; read CHIME Catalog 1 data; population simulator | Simulated population matches catalog distributions |
-| 2 | Lensing + propagation effects + injection; Track A dataset | Track A data ready; baselines 1–2 running |
+| 2 | Lensing + propagation effects + injection; Track A dataset (Catalog 1 baseband) | Track A data ready; baselines 1–2 running |
 | 3 | Track A CNN; Track B pair dataset; baselines 1–3 on Track B | First Track A result |
 | 4 | Siamese models (6, 7, 5) and 2-channel CNN (4); ablations; likelihood-ratio limit | Benchmark table for Track B |
 | 5 | Stress tests; Track C timing test; ε(Δt, μ, S/N) | Efficiency maps |
@@ -341,7 +360,7 @@ The first end-to-end result is Track A with its baseline (end of month 3), so th
 
 - **Language and ML:** Python, PyTorch, scikit-learn / LightGBM for the feature baseline.
 - **Scientific stack:** numpy, scipy, astropy; `frb`-style utilities for DM–z if useful.
-- **Data:** CHIME/FRB Catalog 1 (and Catalog 2 if available) from [chime-frb.ca](https://chime-frb.ca/) — catalog tables and the public waterfall data (verify which products are public and at what resolution). Repeater burst samples from FAST (FRB 20121102A) and the Blinkverse database for intrinsic-repeat negatives. Kaggle has pulsar datasets (e.g. HTRU2) but nothing with lensed FRB labels.
+- **Data:** CHIME/FRB Catalog 1 (and Catalog 2 if available) from [chime-frb.ca](https://chime-frb.ca/) — catalog tables, the public waterfall data (0.983 ms, 16384 channels; see `01_semi_synthetic_data/01_real_data/README.md`) and the Catalog 1 baseband release (140 bursts, 2.56 µs) for Track A. Repeater burst samples from FAST (FRB 20121102A) and the Blinkverse database for intrinsic-repeat negatives. Kaggle has pulsar datasets (e.g. HTRU2) but nothing with lensed FRB labels.
 - **Compute:** machine A for simulation (CPU-heavy), machine B for training (GPU).
 
 ---
@@ -358,9 +377,9 @@ The first end-to-end result is Track A with its baseline (end of month 3), so th
 ## 12. Open items to verify before starting
 
 - Current highest-redshift FRB (for Sec. 2.2).
-- Whether an ML lensed-vs-repeat classifier has been published since the de Mello/Law study.
-- Exact public CHIME data products and their time/frequency resolution.
-- Status of the Chang et al. 2025 lensed candidate and of FRB 20220529A.
+- Re-check before submission that no ML lensed-pair classifier for FRBs has been published (the 2026-11-03 search found none, at abstract level).
+- Download location and size of the Catalog 1 baseband release; resolution of public Catalog 2 waterfalls; time resolution of `calibrated_wfall`.
+- Follow-up status of the FRB 20190308C candidate (Chang et al.).
 - Latest CHIME limits on compact dark matter to compare the null-result forecast against.
 - Availability and format of FAST repeater bursts and the Blinkverse database.
 - Current localization precision of CHIME Outriggers (relevant to Sec. 5.2).
