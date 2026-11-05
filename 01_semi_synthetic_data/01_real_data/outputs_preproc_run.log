@@ -1,0 +1,16 @@
+981 repeater bursts to process
+  100/981
+  200/981
+  300/981
+  400/981
+  500/981
+  600/981
+  700/981
+  800/981
+  900/981
+bursts 981 | noise chunks 20 | coarse_dt 6 | clipped 6
+dnu_d kHz: median 49, measured on 195/981 bursts
+asserts pass; binning conserved: 0 cells > 8 sigma (0.00e+00 of 23462080)
+wrote data\catalog2\preproc\repeaters_256x160.h5 167 MB
+wrote data\catalog2\preproc\repeaters_1024x160.h5 668 MB
+gallery: 59 PNGs in D:\vscode\AIwithFRBs\01_semi_synthetic_data\01_real_data\outputs\preproc_gallery
