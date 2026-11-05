@@ -83,3 +83,19 @@ Script: `02_injection_labelling/01_injection/inject.py` (library with `make_pair
 - **Residual-DM and scattering ranges** are placeholders until `04_propagation` sets them from the literature. Frozen sets get a version tag, and a range change means a new version.
 - **Split balance.** Putting the two big sources in train leaves val/test with 81 small sources (median 3 bursts). Some test sources have < 2 eligible templates, so they give `lensed` and `unrelated` pairs but no `repeat` pairs.
 - **No beam model in v0 training.** If the stress test shows a large drop from the beam multiplier, it moves into training.
+
+## Addendum 2026-11-05 16:00 — v2 (template + smoothed residual): pre-registered gates, written before any v2 measurement
+- **Trigger:** the risk-list escape hatch above ("if the gap is large, add a smoothed, significance-thresholded data residual"). Trigger evidence: [update 1530](../update/2026-11-05_1530_injection-v1-twin-ladder.md) — v1 twin gap −9 ± 2%, generic template deficit (35% unmodelled signal energy), not beam.
+- **Why v1 + limitation may not be enough:** at the medians, sim same-source pairs (≈ 0.91 × 1.082 U ≈ 0.985 U) score *below* real unrelated pairs (U). The offset is as large as the class contrast, so a threshold calibrated on sim would over-call `lensed` on real data. Ranking AUC survives; calibrated thresholds (Track C) do not.
+- **v2 template:** T + R_s. R_s = the burst's own data residual (X − b·T) in σ units, mask-weighted 2-D boxcar (n_f channels × n_t samples), zeroed on flagged channels, kept only in cells with |R_s| ≥ θ × its noise σ, back in raw units.
+- **Prerequisites (measured before any v2 build):**
+  1. bootstrap 95% CI of the same/different contrast (real vs naked);
+  2. a scan over (n_f, n_t, θ) of recovered residual energy and in-box shared noise.
+- **Gates (locked now, one shot):**
+  - **G-noise (shared noise in the burst box, `lensed` pairs, at the k = S/N_inj / model_snr that the S/N pool actually produces).** Pixel-scale median ρ ≤ 0.01 **and** a matched detector median z ≤ 1.0. The matched detector smooths both members with the same kernel and correlates over the kept cells, with z = ρ × √(n_kept / n_kernel). Both are measured on a noise-only proxy: the same kept-cell mask filled with smoothed independent real noise, so only the shared noise is counted. The pixel-scale ρ alone is not enough: smoothing lowers shared and independent noise equally, so a detector smoothing at the kernel scale sees ρ ≈ k² / (1 + k²) again.
+  - **Config selection rule:** among (n_f, n_t, θ) passing G-noise, take the one recovering the most residual energy. If none passes, **v2 is not built.**
+  - **G-twin:** full-v2 twin gap |median| ≤ 2 points, pooled over 3 seeds × 1000 pairs.
+  - **G-audit:** probe (b) AUC ≤ 0.55; probe (c) unchanged.
+  - Scintillation depth is calibrated against the real fine-scale spectral variance before any v2 freeze.
+- "Equal shared noise in `repeat` pairs" cannot be executed: `repeat` members never share R_s. The only branch is "below probe sensitivity" (G-noise).
+- **Failure path:** any gate fails → ship v1 and report the quantified limitation (the arithmetic above) → discuss with the advisor. No tuning loop.

@@ -15,7 +15,7 @@ Update this table whenever an [update/](update/) file is written. ⬜ not starte
 | Plan | Project_Description.md, pipeline.mmd | ✅ single paper: Siamese for lensed repeaters (Tracks B + C) | [2026-11-04](update/2026-11-04_1112_single-paper-lensed-repeaters.md) |
 | [literature_review](literature_review/) | Background and prior work | ✅ first pass | [2026-11-03](update/2026-11-03_1125_literature-and-data-check.md) |
 | [01_semi_synthetic_data](01_semi_synthetic_data/) | Phase 1 · Semi-synthetic lensed repeaters | 🟡 Catalog 2 repeaters preprocessed: 981 × 256/1024 × 160 HDF5 + 20-chunk noise bank; lens population, propagation, impostors next | [2026-11-05](update/2026-11-05_1051_catalog2-preprocessing.md) |
-| [02_injection_labelling](02_injection_labelling/) | Phase 2 · Injection & labelling | 🟡 Track B pair injection v0: frozen val/test/stress manifests, leak audit passes; real repeats look more alike than simulated ones | [2026-11-05](update/2026-11-05_1335_pair-injection.md) |
+| [02_injection_labelling](02_injection_labelling/) | Phase 2 · Injection & labelling | 🟡 v1 shipped (measured S/N, frozen sets, audit passes). v2 residual template failed its pre-registered twin gate → limitation: sim pairs ~10% less alike than real (~3× class contrast); thresholds must come from real-data backgrounds | [2026-11-05](update/2026-11-05_1640_v2-residual-gates.md) |
 | [03_models_benchmark](03_models_benchmark/) | Phase 3–4 · Models & benchmark (Tracks B, C) | ⬜ | — |
 | [04_validation](04_validation/) | Validation | ⬜ | — |
 | [05_search](05_search/) | Search: Catalog 2 repeaters | ⬜ | — |

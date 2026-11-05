@@ -28,6 +28,7 @@ KDM = 4.148808e6  # dispersion constant, ms MHz^2 / (pc cm^-3)
 BIG = ("FRB20220912A", "FRB20180916B")  # forced into train so they cannot dominate val/test
 KINDS = ("lensed", "repeat", "unrelated")
 # name: (split, n_pairs, seed, wide nuisances)
+VERSION = "v1"  # v0 (commit 496c048) injected at catalog snr_fitb; v1 at measured model S/N
 SETS = {"val": ("val", 3000, 101, False), "test": ("test", 3000, 102, False), "stress": ("test", 3000, 103, True)}
 PAR_NAMES = ("n_comp", "width_max_ms", "scat_ms", "dm_fitb", "spec_index0", "spec_running0")
 
@@ -168,7 +169,9 @@ class Pools:
                 self.tmpl[s] = t
         self.sources = np.array(sorted(self.tmpl))
         self.bgs = np.flatnonzero(fs[c["bg_file"]] == split)  # rows of bg/X
-        snr = c["snr_fitb"]
+        # v1: matched-filter S/N of the model in the real data (catalog snr_fitb is ~3.7% lower,
+        # which made v0 members systematically fainter than the bursts they stand for)
+        snr = c["model_snr"][np.isfinite(c["model_snr"])]
         self.snr_pool = snr[snr >= SNR_MIN]  # catalog-wide S/N distribution, same for all splits
 
 
@@ -212,8 +215,10 @@ def fshift(a, d):
     return np.fft.irfft(F, n, axis=1)[:, :WIN]
 
 
-def member(c, ti, bi, snr, rng, tau600, wide):
-    """One pair member: template ti on background row bi at injected matched-filter S/N snr."""
+def member(c, ti, bi, snr, rng, tau600, wide, off=()):
+    """One pair member: template ti on background row bi at injected matched-filter S/N snr.
+    off: nuisances to switch off ("shift", "dm", "scint") for the twin ladder; draws still happen
+    so the remaining nuisances get identical values."""
     f = c["freq_mhz"]
     fi = c["bg_file"][bi]
     mask = c["fm"][fi] >= 0.25
@@ -222,8 +227,9 @@ def member(c, ti, bi, snr, rng, tau600, wide):
     sig = np.clip(sig, med / 3, med * 3)  # nearly-masked channels must not blow up the template
     S = c["T"][ti] / sig[:, None]  # physical template in the BACKGROUND file's sigma units
     shift = rng.uniform(-1, 1) * (20 if wide else 10)
-    sdm = c["dm_err"][ti] * c["snr_fitb"][ti] / snr * (3 if wide else 1)
+    sdm = c["dm_err"][ti] * c["model_snr"][ti] / snr * (3 if wide else 1)
     ddm = rng.normal(0, sdm)
+    shift, ddm = (0.0 if "shift" in off else shift), (0.0 if "dm" in off else ddm)
     S = fshift(S, shift + KDM * ddm * (f ** -2.0 - 600.0 ** -2.0) / DT_MS)
     if tau600 > 0:
         t = np.arange(WIN) * DT_MS
@@ -233,6 +239,8 @@ def member(c, ti, bi, snr, rng, tau600, wide):
         S = np.fft.irfft(np.fft.rfft(S, 2 * WIN, axis=1) * np.fft.rfft(ker, 2 * WIN, axis=1), 2 * WIN, axis=1)[:, :WIN]
     nsc = max(1.0, 1562.5 / c["dnu_khz"][ti])
     gain = rng.gamma(nsc, 1.0 / nsc, NF)  # fresh scintillation pattern, the source's bandwidth
+    if "scint" in off:
+        gain = np.ones(NF)
     if wide:  # stress only: smooth beam/bandpass multiplier
         x = (f - f[0]) / (f[-1] - f[0])
         gain *= np.clip(1 + 0.3 * sum(rng.normal() * np.cos(2 * np.pi * k * x + rng.uniform(0, 2 * np.pi))
@@ -301,6 +309,7 @@ def load_set(name, pools=None):
     pools = pools or load_pools()
     split, n, seed, wide = SETS[name]
     exp = json.loads((MAN / f"{name}.json").read_text())
+    assert exp.get("version") == VERSION, f"{name}: manifest is {exp.get('version', 'v0')}, code is {VERSION}"
     h = hashlib.sha256()
     XA, XB, MA, MB, Y = [], [], [], [], []
     for i, xa, xb, ma, mb, y, _ in gen_set(pools[split], n, seed, wide):
@@ -329,6 +338,16 @@ def xcorr(a, ma, b, mb, maxlag=20):
     cc = np.fft.irfft((np.fft.rfft(A, n, axis=1) * np.conj(np.fft.rfft(B, n, axis=1))).sum(0), n)
     cc = np.concatenate([cc[-maxlag:], cc[:maxlag + 1]])
     return float(cc.max() / np.sqrt((A ** 2).sum() * (B ** 2).sum() + 1e-30))
+
+
+def xcorr_smooth(a, ma, b, mb, blk=16, maxlag=20):
+    """Baseline 1 on spectra block-averaged over blk channels (mask-weighted): envelope scale only."""
+    def sm(x, m):
+        w = m.reshape(-1, blk).sum(1)
+        return (np.where(m[:, None], x, 0).reshape(-1, blk, WIN).sum(1) / np.maximum(w, 1)[:, None]), w >= blk // 4
+    A, va = sm(a, ma)
+    B, vb = sm(b, mb)
+    return xcorr(A, va, B, vb, maxlag)
 
 
 def main():
@@ -369,7 +388,7 @@ def main():
             w.writeheader()
             w.writerows(rows)
         srcshare = max(np.unique([r["src_a"] for r in rows], return_counts=True)[1]) / n
-        (MAN / f"{name}.json").write_text(json.dumps(dict(split=split, n=n, seed=seed, wide=wide, sha256=h.hexdigest(),
+        (MAN / f"{name}.json").write_text(json.dumps(dict(split=split, n=n, seed=seed, wide=wide, version=VERSION, sha256=h.hexdigest(),
                                                           max_source_share=round(float(srcshare), 3)), indent=1))
         print(f"frozen {name}: {n} pairs from {split}, max source share {srcshare:.1%}, sha256 {h.hexdigest()[:12]}")
     load_set("test", pools)  # regeneration reproduces the hash
@@ -491,25 +510,63 @@ def main():
         i, j = rr.choice(v, 2, replace=False)
         real.append(xcorr(Xr[i], FMr[i] >= 0.25, Xr[j], FMr[j] >= 0.25))
     real = np.array(real)
-    # paired twins: each real repeat pair (i, j) re-simulated from its own two templates at their
-    # catalog S/N on fresh backgrounds -> the gap is template-vs-real plus nuisances only
+    # twin ladder: each real repeat pair (i, j) re-simulated from its own two templates on the SAME
+    # fresh backgrounds and the SAME nuisance draws in every variant -> each step isolates one cause.
+    # Scored at full resolution and on 16 x 25 MHz smoothed spectra (envelope/beam scale only).
     el = np.flatnonzero(c["eligible"])
     byT = {s: el[c["source"][el] == s] for s in np.unique(c["source"][el])}
     byT = {s: v for s, v in byT.items() if len(v) >= 2}
     kT = sorted(byT)
-    tw_real, tw_sim = [], []
-    for _ in range(1000):
+    ALLN = ("shift", "dm", "scint")
+    variants = {"naked": dict(off=ALLN), "+shift": dict(off=("dm", "scint")), "+dm": dict(off=("shift", "scint")),
+                "+scint": dict(off=("shift", "dm")), "full (v1)": dict(off=()), "full, catalog S/N (v0)": dict(off=(), cat=True)}
+    lad = {k: ([], []) for k in ("real", *variants)}
+    for q in range(1000):
         i, j = rr.choice(byT[kT[rr.integers(len(kT))]], 2, replace=False)
         b1, b2 = rr.choice(np.flatnonzero(~np.isin(c["bg_file"], [i, j])), 2, replace=False)
-        xi, mi, _ = member(c, i, b1, max(c["snr_fitb"][i], SNR_MIN), rr, 0.0, False)
-        xj, mj, _ = member(c, j, b2, max(c["snr_fitb"][j], SNR_MIN), rr, 0.0, False)
-        tw_sim.append(xcorr(xi, mi, xj, mj))
-        tw_real.append(xcorr(Xr[i], FMr[i] >= 0.25, Xr[j], FMr[j] >= 0.25))
-    tw_real, tw_sim = np.array(tw_real), np.array(tw_sim)
+        mi_, mj_ = FMr[i] >= 0.25, FMr[j] >= 0.25
+        lad["real"][0].append(xcorr(Xr[i], mi_, Xr[j], mj_)); lad["real"][1].append(xcorr_smooth(Xr[i], mi_, Xr[j], mj_))
+        for name, v in variants.items():
+            snr_i, snr_j = ((c["snr_fitb"][i], c["snr_fitb"][j]) if v.get("cat") else (c["model_snr"][i], c["model_snr"][j]))
+            g = np.random.default_rng([77, q])
+            xi, mi, _ = member(c, i, b1, max(snr_i, SNR_MIN), g, 0.0, False, v["off"])
+            xj, mj, _ = member(c, j, b2, max(snr_j, SNR_MIN), g, 0.0, False, v["off"])
+            lad[name][0].append(xcorr(xi, mi, xj, mj)); lad[name][1].append(xcorr_smooth(xi, mi, xj, mj))
+    lad = {k: (np.array(a), np.array(b)) for k, (a, b) in lad.items()}
     from scipy.stats import wilcoxon
-    twin_line = (f"    paired twins (n=1000): real median {np.median(tw_real):.3f}, simulated median {np.median(tw_sim):.3f}, "
-               f"median(sim-real) {np.median(tw_sim - tw_real):+.3f}, Wilcoxon p={wilcoxon(tw_sim, tw_real).pvalue:.2e}, "
-               f"Spearman r={np.corrcoef(np.argsort(np.argsort(tw_real)), np.argsort(np.argsort(tw_sim)))[0, 1]:.2f}")
+    twin_lines = ["    twin ladder (n=1000 real repeat pairs; gap = median(sim - real) / median(real)):",
+                  f"      {'variant':24s} {'full-res median':>15s} {'gap':>7s}   {'25 MHz median':>13s} {'gap':>7s}"]
+    for k, (a, b) in lad.items():
+        ra, rb = lad["real"]
+        ga = np.median(a - ra) / np.median(ra) if k != "real" else 0.0
+        gb = np.median(b - rb) / np.median(rb) if k != "real" else 0.0
+        twin_lines.append(f"      {k:24s} {np.median(a):15.4f} {ga:+7.1%}   {np.median(b):13.4f} {gb:+7.1%}")
+    a, ra = lad["full (v1)"][0], lad["real"][0]
+    twin_lines.append(f"      full (v1) vs real: Wilcoxon p={wilcoxon(a, ra).pvalue:.2e}, "
+                      f"Spearman r={np.corrcoef(np.argsort(np.argsort(ra)), np.argsort(np.argsort(a)))[0, 1]:.2f}")
+    # is the gap source-specific (shared beam/structure) or a generic template deficit? Same check
+    # on different-source pairs: naked templates vs real, and the same-vs-different contrast.
+    cnt = {}
+    for kind in ("same", "diff"):
+        R_, M_ = [], []
+        for q in range(1000):
+            if kind == "same":
+                i, j = rr.choice(byT[kT[rr.integers(len(kT))]], 2, replace=False)
+            else:
+                i, j = rr.choice(el, 2, replace=False)
+                if c["source"][i] == c["source"][j]:
+                    continue
+            b1, b2 = rr.choice(np.flatnonzero(~np.isin(c["bg_file"], [i, j])), 2, replace=False)
+            R_.append(xcorr(Xr[i], FMr[i] >= 0.25, Xr[j], FMr[j] >= 0.25))
+            g = np.random.default_rng([78, q])
+            xi, mi, _ = member(c, i, b1, max(c["model_snr"][i], SNR_MIN), g, 0.0, False, ALLN)
+            xj, mj, _ = member(c, j, b2, max(c["model_snr"][j], SNR_MIN), g, 0.0, False, ALLN)
+            M_.append(xcorr(xi, mi, xj, mj))
+        cnt[kind] = (np.median(R_), np.median(M_))
+    twin_lines.append(f"      naked-vs-real gap, same-source {cnt['same'][1] / cnt['same'][0] - 1:+.1%}, different-source "
+                      f"{cnt['diff'][1] / cnt['diff'][0] - 1:+.1%}; same/different contrast real "
+                      f"{cnt['same'][0] / cnt['diff'][0] - 1:+.1%}, naked {cnt['same'][1] / cnt['diff'][1] - 1:+.1%}")
+    twin_line = "\n".join(twin_lines)
     rep.append(f"(d) baseline-1 xcorr medians: constructed lensed {np.median(xc[0]):.3f}, repeat {np.median(xc[1]):.3f}, "
                f"unrelated {np.median(xc[2]):.3f}; REAL repeat pairs {np.median(real):.3f} (n=2000); "
                f"KS constructed-vs-real repeat p={ks_2samp(xc[1], real).pvalue:.2e}")
