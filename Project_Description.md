@@ -103,7 +103,11 @@ Steps:
 2. **Lensed repeater construction.** Take a real repeater's burst list as image A. Image B = every burst of A delayed by Δt and scaled by the flux ratio. The observed source is the union of both streams.
 3. **Per-image propagation differences:** ΔDM, ΔRM, different scattering time and scintillation pattern.
 4. **Observation.** Keep only bursts (from either image) that arrive while CHIME's exposure covers the position *and* pass the detection threshold after magnification. This applies the transit selection of Sec. 4.1 burst by burst.
-5. **Impostors:** plasma-lensed bursts (chromatic delays and magnification); diffractive scintillation (the source of false candidates in Kader et al. 2022); naturally multi-component bursts.
+5. **Impostors (cross-file pairs only; [plan 2026-11-05_1925](plan/2026-11-05_1925_impostor-pairs.md)).** An impostor is a pair of *different* bursts from one source that share a propagation imprint, so they look like one burst seen twice:
+   - **I1:** a shared spectral envelope, as from a host plasma-lens caustic lasting hours to days;
+   - **I2:** a shared diffractive-scintillation pattern, for repeats closer than the scintillation time.
+
+   Plasma-lensing echoes within one burst, multi-component bursts and the µs-scale scintillation candidates of Kader et al. 2022 are within-file effects. They are outside Track B, which compares bursts hours to months apart.
 6. Fully synthetic bursts (parametric pulse models) only as a control set, to check that results do not depend on the particular real templates.
 
 Caution: FAST data are at ~1.25 GHz, CHIME at 400–800 MHz. FAST bursts are rescaled to the CHIME band and resolution and used only for augmentation; every headline result is on CHIME data.
@@ -245,7 +249,7 @@ Report instead, at both pair and source level:
 - **Distance to the reference limit** (Sec. 6.3).
 - **Calibration** of predicted probabilities (reliability diagram).
 - **Robustness:** stress-test set with wider nuisances; Gaussian vs real noise backgrounds.
-- **Impostor rejection:** how often plasma-lensed, scintillating or multi-component bursts are called lensed copies.
+- **Impostor rejection:** how often impostor pairs (shared plasma-lens envelope or shared scintillation, Phase 1 step 5) are called lensed copies.
 
 ### 7.1 Validating the search: "no lens" vs "we missed it"
 
@@ -254,7 +258,7 @@ A non-detection only means something if we can show the pipeline would have foun
 1. **Injection–recovery.** Turn real Catalog 2 repeaters into lensed ones (Phase 1, steps 2–4) with known Δt and flux ratio, run the full pipeline, and measure ε. This ε is the one in Sec. 5.1.
 2. **Blind injections.** A script (or a teammate) converts an unknown number of real repeaters into lensed ones and seals the answer key; we search, then unseal.
 3. **False-alarm rate from real data.** Time-scrambled burst lists and cross-source pairs give the real background.
-4. **Controls.** Must flag or explain: the FRB 20190308C candidate (Chang et al. 2025). Must reject: plasma-lensed FRB 20201124A, scintillating bursts, and naturally multi-component bursts. Baselines and learned models must agree; disagreements are investigated before any conclusion.
+4. **Controls.** Must flag or explain: the FRB 20190308C candidate (Chang et al. 2025). Must reject: real repeat pairs of the plasma-lensing candidate FRB 20201124A, and impostor pairs. (Multi-component bursts cannot form a cross-file pair, so they are not a Track B control.) Baselines and learned models must agree; disagreements are investigated before any conclusion.
 5. **Expected count before searching.** Compute N_exp for Catalog 2 first (Sec. 5.1), so the reader knows a null was expected.
 6. **Injection realism.** Too-clean injections inflate ε, so injections span several distortion levels and results are reported as a range.
 7. **Blind analysis protocol.** Pipeline, thresholds and priors are fixed using simulations, off-pulse data and blind injections only. That version is tagged in git (e.g. `unblind-v1`) and only then run on the real Catalog 2 repeaters. Any change after unblinding is reported separately with its reason.

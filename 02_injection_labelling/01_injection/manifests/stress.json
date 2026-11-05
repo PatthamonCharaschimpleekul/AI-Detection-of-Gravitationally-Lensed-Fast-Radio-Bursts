@@ -1,9 +1,9 @@
 {
  "split": "test",
- "n": 3000,
+ "n": 4000,
  "seed": 103,
  "wide": true,
- "version": "v1",
- "sha256": "337594c0850f757ee50475e6e5a3acf1c8b7b95f10c7d9f528ae3f90367cc76b",
- "max_source_share": 0.059
+ "version": "v1.1",
+ "sha256": "1ac99f306ea34de3dae3108f39095bd51f48cd45d2429a5b2aeff784b87167ab",
+ "max_source_share": 0.057
 }

@@ -26,10 +26,19 @@ WIN, NF, DT_MS, OFF_PAD = 160, 256, 0.98304, 20
 SNR_MIN, R_MIN, OFF_MIN, DNU_DEFAULT, MODEL_SNR_MIN = 10.0, 0.05, 60, 49.0, 5.0
 KDM = 4.148808e6  # dispersion constant, ms MHz^2 / (pc cm^-3)
 BIG = ("FRB20220912A", "FRB20180916B")  # forced into train so they cannot dominate val/test
-KINDS = ("lensed", "repeat", "unrelated")
+KINDS = ("lensed", "repeat", "unrelated", "impostor")
 # name: (split, n_pairs, seed, wide nuisances)
-VERSION = "v1"  # v0 (commit 496c048) injected at catalog snr_fitb; v1 at measured model S/N
-SETS = {"val": ("val", 3000, 101, False), "test": ("test", 3000, 102, False), "stress": ("test", 3000, 103, True)}
+VERSION = "v1.1"  # v0 (496c048) catalog snr_fitb; v1 measured model S/N; v1.1 = v1 + 1000 impostor pairs appended
+SETS = {"val": ("val", 4000, 101, False), "test": ("test", 4000, 102, False), "stress": ("test", 4000, 103, True)}
+LEGACY = 3000  # pairs 0..2999 are exactly the v1 sets (kinds cycle lensed/repeat/unrelated); 3000.. are impostors
+V1_SHA = {"val": "54cc6d5710b04dbc700525826167a9d61497c8ea2af05b91f3b99fa36fe98847",
+          "test": "c444efd58603f19578cd20ae437d3e285d8443913e2d2c90b459aff4bd67a53a",
+          "stress": "337594c0850f757ee50475e6e5a3acf1c8b7b95f10c7d9f528ae3f90367cc76b"}
+# I1 shared spectral envelope: a host plasma lens imposes one band shape on every burst while a caustic lasts
+# (hours-days; Cordes et al. 2017, ApJ 842, 35). Implemented as envelope transfer: member B keeps its own
+# time-frequency structure but takes member A's 25 MHz-smoothed spectral envelope, so each member's marginal
+# stays a real burst spectrum (a parametric Gaussian gain made members narrower than real bursts: audit (a)).
+I1_SMOOTH, I1_RMAX = 16, 10.0  # envelope smoothing (channels) and cap on the per-channel transfer ratio
 PAR_NAMES = ("n_comp", "width_max_ms", "scat_ms", "dm_fitb", "spec_index0", "spec_running0")
 
 
@@ -215,10 +224,11 @@ def fshift(a, d):
     return np.fft.irfft(F, n, axis=1)[:, :WIN]
 
 
-def member(c, ti, bi, snr, rng, tau600, wide, off=()):
+def member(c, ti, bi, snr, rng, tau600, wide, off=(), gain_shared=None, scint_shared=None):
     """One pair member: template ti on background row bi at injected matched-filter S/N snr.
     off: nuisances to switch off ("shift", "dm", "scint") for the twin ladder; draws still happen
-    so the remaining nuisances get identical values."""
+    so the remaining nuisances get identical values. gain_shared / scint_shared: impostor imprints
+    shared by both members (I1 plasma-lens gain, I2 scintillation pattern) instead of independent ones."""
     f = c["freq_mhz"]
     fi = c["bg_file"][bi]
     mask = c["fm"][fi] >= 0.25
@@ -239,8 +249,12 @@ def member(c, ti, bi, snr, rng, tau600, wide, off=()):
         S = np.fft.irfft(np.fft.rfft(S, 2 * WIN, axis=1) * np.fft.rfft(ker, 2 * WIN, axis=1), 2 * WIN, axis=1)[:, :WIN]
     nsc = max(1.0, 1562.5 / c["dnu_khz"][ti])
     gain = rng.gamma(nsc, 1.0 / nsc, NF)  # fresh scintillation pattern, the source's bandwidth
+    if scint_shared is not None:
+        gain = scint_shared.copy()
     if "scint" in off:
         gain = np.ones(NF)
+    if gain_shared is not None:
+        gain = gain * gain_shared
     if wide:  # stress only: smooth beam/bandpass multiplier
         x = (f - f[0]) / (f[-1] - f[0])
         gain *= np.clip(1 + 0.3 * sum(rng.normal() * np.cos(2 * np.pi * k * x + rng.uniform(0, 2 * np.pi))
@@ -262,20 +276,40 @@ def member(c, ti, bi, snr, rng, tau600, wide, off=()):
     return out.astype(np.float32), mask, info
 
 
+def envelope_transfer(Ta, Tb):
+    """Per-channel ratio that gives template Tb the smoothed spectral envelope of Ta (both raw units)."""
+    from scipy.ndimage import uniform_filter1d
+    ea = uniform_filter1d(np.clip(Ta.sum(1), 0, None), I1_SMOOTH)
+    eb = uniform_filter1d(np.clip(Tb.sum(1), 0, None), I1_SMOOTH)
+    ea, eb = ea / ea.max(), eb / eb.max()
+    return np.clip(ea / np.maximum(eb, 1e-3), 0.0, I1_RMAX)
+
+
 def make_pair(kind, rng, P, wide=False):
-    """Returns xa, xb (NF, WIN) float32, mask_a, mask_b, label (0 lensed, 1 repeat, 2 unrelated), info."""
+    """Returns xa, xb (NF, WIN) float32, mask_a, mask_b, label (0 lensed, 1 repeat, 2 unrelated, 3 impostor), info.
+    impostor = two different templates of one source sharing I1 (plasma-lens gain), I2 (scintillation) or both."""
     c = P.c
     s = P.sources[rng.integers(len(P.sources))]
     if kind == "lensed":
         ta = tb = rng.choice(P.tmpl[s])
         s2 = s
-    elif kind == "repeat":
+    elif kind in ("repeat", "impostor"):
         ta, tb = rng.choice(P.tmpl[s], 2, replace=False)
         s2 = s
     else:
         others = P.sources[P.sources != s]
         s2 = others[rng.integers(len(others))]
         ta, tb = rng.choice(P.tmpl[s]), rng.choice(P.tmpl[s2])
+    imp = dict(imp_type="")
+    gsh = ssh = None
+    if kind == "impostor":  # extra draws only in this branch, so the other kinds' streams are unchanged
+        t = ("I1", "I2", "I1+I2")[int(rng.integers(3))]
+        imp["imp_type"] = t
+        if "I1" in t:
+            gsh = envelope_transfer(c["T"][ta], c["T"][tb])  # applied to member B only
+        if "I2" in t:
+            nsc = max(1.0, 1562.5 / c["dnu_khz"][ta])
+            ssh = rng.gamma(nsc, 1.0 / nsc, NF)
     snr_a = float(rng.choice(P.snr_pool))
     r = float(np.exp(rng.uniform(np.log(max(R_MIN, SNR_MIN / snr_a)), 0.0)))  # S/N_b >= SNR_MIN
     snr_b = r * snr_a
@@ -285,12 +319,12 @@ def make_pair(kind, rng, P, wide=False):
     hi = 3.0 if wide else 1.0
     tau = float(np.exp(rng.uniform(np.log(0.01), np.log(hi)))) if rng.random() < 0.5 else 0.0
     which = int(rng.integers(2))
-    xa, ma, ia = member(c, ta, ba, snr_a, rng, tau if which == 0 else 0.0, wide)
-    xb, mb, ib = member(c, tb, bb, snr_b, rng, tau if which == 1 else 0.0, wide)
+    xa, ma, ia = member(c, ta, ba, snr_a, rng, tau if which == 0 else 0.0, wide, scint_shared=ssh)
+    xb, mb, ib = member(c, tb, bb, snr_b, rng, tau if which == 1 else 0.0, wide, gain_shared=gsh, scint_shared=ssh)
     swap = bool(rng.random() < 0.5)
     info = dict(kind=kind, src_a=s, src_b=s2, tmpl_a=c["tns"][ta], tmpl_b=c["tns"][tb], ti_a=int(ta), ti_b=int(tb),
                 bg_a=c["tns"][c["bg_file"][ba]], bg_b=c["tns"][c["bg_file"][bb]], bi_a=int(ba), bi_b=int(bb),
-                snr_a=snr_a, snr_b=snr_b, scat_member=which if tau > 0 else -1, tau600=tau,
+                snr_a=snr_a, snr_b=snr_b, scat_member=which if tau > 0 else -1, tau600=tau, **imp,
                 **{k + "_a": v for k, v in ia.items() if k != "tau600"}, **{k + "_b": v for k, v in ib.items() if k != "tau600"})
     if swap:  # random order; info keeps the pre-swap labels plus the flag
         xa, xb, ma, mb = xb, xa, mb, ma
@@ -298,10 +332,18 @@ def make_pair(kind, rng, P, wide=False):
     return xa, xb, ma, mb, KINDS.index(kind), info
 
 
-def gen_set(P, n, seed, wide):
-    """Deterministic: pair i uses rng([seed, i]) and kind KINDS[i % 3]."""
+def kind_of(i, cycle4=False):
+    """Frozen sets: i < LEGACY cycles the three v1 kinds (identical to v1), later i are impostors.
+    cycle4: all four kinds in turn (audit sets)."""
+    if cycle4:
+        return KINDS[i % 4]
+    return KINDS[i % 3] if i < LEGACY else "impostor"
+
+
+def gen_set(P, n, seed, wide, cycle4=False):
+    """Deterministic: pair i uses rng([seed, i]) and kind kind_of(i)."""
     for i in range(n):
-        yield (i,) + make_pair(KINDS[i % 3], np.random.default_rng([seed, i]), P, wide)
+        yield (i,) + make_pair(kind_of(i, cycle4), np.random.default_rng([seed, i]), P, wide)
 
 
 def load_set(name, pools=None):
@@ -376,12 +418,15 @@ def main():
         h = hashlib.sha256()
         rows = []
         for i, xa, xb, ma, mb, y, info in gen_set(pools[split], n, seed, wide):
+            if i == LEGACY:
+                assert h.hexdigest() == V1_SHA[name], f"{name}: pairs 0..{LEGACY - 1} no longer reproduce v1"
+                print(f"  {name}: pairs 0..{LEGACY - 1} reproduce the v1 hash")
             assert xa.shape == xb.shape == (NF, WIN) and np.isfinite(xa).all() and np.isfinite(xb).all()
             assert not xa[~ma].any() and not xb[~mb].any(), "masked channels must be zero"
             assert info["snr_b"] >= SNR_MIN - 1e-9 and info["snr_a"] >= SNR_MIN
             h.update(xa.tobytes()); h.update(xb.tobytes())
             rows.append(dict(i=i, seed=f"{seed}:{i}", label=y, **info))
-            if name == "test" and i < 30:
+            if name == "test" and (i < 30 or LEGACY <= i < LEGACY + 10):
                 keep[i] = (xa, xb, ma, mb, info)
         with open(MAN / f"{name}.csv", "w", newline="") as f:
             w = csv.DictWriter(f, fieldnames=list(rows[0]))
@@ -398,7 +443,7 @@ def main():
     P = pools["train"]
     sidx = {s: k for k, s in enumerate(np.unique(c["source"]))}  # stable categorical code
     rows = []
-    for i, xa, xb, ma, mb, y, info in gen_set(P, 6000, 999, False):
+    for i, xa, xb, ma, mb, y, info in gen_set(P, 8000, 999, False, cycle4=True):
         ea, eb = (info["ext_lo_a"], info["ext_hi_a"]), (info["ext_lo_b"], info["ext_hi_b"])
         if info["swapped"]:
             ea, eb = eb, ea
@@ -454,10 +499,11 @@ def main():
     Y = np.array([r["y"] for r in rows])
     rep.append("(a) per-member stats, KS p-values (members A and B pooled):")
     for k in ("off_std", "mask_frac", "snr_box", "centre"):
-        v = {y: np.array([r[s][k] for r in rows if r["y"] == y for s in ("sa", "sb")]) for y in range(3)}
-        p01, p02 = ks_2samp(v[0], v[1]).pvalue, ks_2samp(v[0], v[2]).pvalue
+        v = {y: np.array([r[s][k] for r in rows if r["y"] == y for s in ("sa", "sb")]) for y in range(4)}
+        p01, p02, p31 = ks_2samp(v[0], v[1]).pvalue, ks_2samp(v[0], v[2]).pvalue, ks_2samp(v[3], v[1]).pvalue
+        med = "/".join(f"{np.nanmedian(v[y]):.3f}" for y in range(4))
         rep.append(f"    {k:9s} lensed-vs-repeat p={p01:.3f}  lensed-vs-unrelated p={p02:.3f}  "
-                   f"medians {np.nanmedian(v[0]):.3f}/{np.nanmedian(v[1]):.3f}/{np.nanmedian(v[2]):.3f}")
+                   f"impostor-vs-repeat p={p31:.3f}  medians {med}")
     lr = Y < 2
     F = np.array([r["f"] for r in rows], float)[lr]
     gbm = HistGradientBoostingClassifier(random_state=0)
@@ -469,10 +515,15 @@ def main():
     Fc = np.column_stack([F, np.array([r["centre_off"] for r in rows], float)[lr]])
     auc_c = cross_val_score(gbm, Fc, Y[lr], cv=5, scoring="roc_auc")
     rep.append(f"    with centre offset added (a profile-similarity measurement, i.e. lensing information): AUC {auc_c.mean():.3f}")
+    ir = (Y == 1) | (Y == 3)
+    Fi = np.array([r["f"] for r in rows], float)[ir]
+    auc_i = cross_val_score(gbm, Fi, Y[ir], cv=5, scoring="roc_auc")
+    rep.append(f"    impostor vs repeat, same non-spectral features, n={ir.sum()}: AUC {auc_i.mean():.3f} +- {auc_i.std():.3f}  "
+               f"[gate <= 0.55: {'PASS' if auc_i.mean() <= 0.55 else 'FAIL'}]")
     rep.append(f"    probe-power check, fitburst params of BOTH members: AUC {auc_both.mean():.3f} (expected ~1: equality is the lensing signal)")
-    nc = {y: np.array([r["noise_corr"] for r in rows if r["y"] == y]) for y in range(3)}
+    nc = {y: np.array([r["noise_corr"] for r in rows if r["y"] == y]) for y in range(4)}
     rep.append("(c) off-pulse noise correlation between members (T2): " +
-               "  ".join(f"{KINDS[y]} {np.nanmean(nc[y]):+.4f} (sd {np.nanstd(nc[y]):.4f})" for y in range(3)))
+               "  ".join(f"{KINDS[y]} {np.nanmean(nc[y]):+.4f} (sd {np.nanstd(nc[y]):.4f})" for y in range(4)))
     # T1 trap demo: scaled real data in the on-pulse box shares the template's noise
     with h5py.File(REAL / "preproc" / "repeaters_256x160.h5") as f:
         Xr, FMr, TMr = f["X"][:], f["freq_mask"][:], f["time_mask"][:]
@@ -497,7 +548,7 @@ def main():
         rep.append(f"    T1 at k={k}: residual corr {np.mean(cs):.3f} (k^2/(1+k^2) = {k*k/(1+k*k):.3f}), "
                    f"median z {np.median(zs):.1f} over {len(cs)} bright templates")
     # (d) baseline 1 on constructed vs real as-observed repeat pairs
-    xc = {y: np.array([r["xc"] for r in rows if r["y"] == y]) for y in range(3)}
+    xc = {y: np.array([r["xc"] for r in rows if r["y"] == y]) for y in range(4)}
     real_src = c["source"]
     ok = (c["coarse_dt"] == 0) & (c["snr_fitb"] >= SNR_MIN)
     rr = np.random.default_rng(11)
@@ -568,15 +619,39 @@ def main():
                       f"{cnt['same'][0] / cnt['diff'][0] - 1:+.1%}, naked {cnt['same'][1] / cnt['diff'][1] - 1:+.1%}")
     twin_line = "\n".join(twin_lines)
     rep.append(f"(d) baseline-1 xcorr medians: constructed lensed {np.median(xc[0]):.3f}, repeat {np.median(xc[1]):.3f}, "
-               f"unrelated {np.median(xc[2]):.3f}; REAL repeat pairs {np.median(real):.3f} (n=2000); "
+               f"unrelated {np.median(xc[2]):.3f}, impostor {np.median(xc[3]):.3f}; REAL repeat pairs {np.median(real):.3f} (n=2000); "
                f"KS constructed-vs-real repeat p={ks_2samp(xc[1], real).pvalue:.2e}")
     smin = np.array([r["snr_min"] for r in rows])
+    XC = np.array([r["xc"] for r in rows])
     for a_, b_ in ((10, 15), (15, 25), (25, 50), (50, 1e9)):
-        s = lr & (smin >= a_) & (smin < b_)
-        if s.sum() > 50 and len(set(Y[s])) == 2:
-            rep.append(f"    baseline-1 AUC lensed vs repeat, min S/N {a_}-{b_ if b_ < 1e9 else 'inf'}: "
-                       f"{roc_auc_score(Y[s] == 0, np.array([r['xc'] for r in rows])[s]):.3f} (n={s.sum()})")
+        sb_ = (smin >= a_) & (smin < b_)
+        auc_txt = []
+        for pos, neg, nm in ((0, 1, "lensed vs repeat"), (0, 3, "lensed vs impostor"), (3, 1, "impostor vs repeat")):
+            s = sb_ & ((Y == pos) | (Y == neg))
+            if s.sum() > 50 and len(set(Y[s])) == 2:
+                auc_txt.append(f"{nm} {roc_auc_score(Y[s] == pos, XC[s]):.3f}")
+        rep.append(f"    baseline-1 AUC, min S/N {a_}-{b_ if b_ < 1e9 else 'inf'}: " + ", ".join(auc_txt) + f" (n={sb_.sum()})")
     rep.append(twin_line)
+    # (e) real control (plan 1925): FRB 20201124A, the proposed plasma-lensing repeater; reference, not a gate
+    ctl = "FRB20201124A"
+    msnr = np.where(np.isfinite(c["model_snr"]), c["model_snr"], c["snr_fitb"])
+    rc = np.random.default_rng(13)
+    others = [k for k in keys if k != ctl]
+    sc = {}
+    for nm in ("20201124A", "other sources"):
+        vals = []
+        for _ in range(3000):
+            v = byS[ctl] if nm == "20201124A" else byS[others[rc.integers(len(others))]]
+            i, j = rc.choice(v, 2, replace=False)
+            vals.append((min(msnr[i], msnr[j]), xcorr(Xr[i], FMr[i] >= 0.25, Xr[j], FMr[j] >= 0.25)))
+        sc[nm] = np.array(vals)
+    rep.append("(e) real control FRB 20201124A: baseline-1 median xcorr of its real repeat pairs vs other sources' (by min S/N)")
+    for a_, b_ in ((10, 25), (25, 1e9)):
+        cells = []
+        for nm, v in sc.items():
+            s = (v[:, 0] >= a_) & (v[:, 0] < b_)
+            cells.append(f"{nm} {np.median(v[s, 1]):.4f} (n={s.sum()})" if s.sum() >= 10 else f"{nm} n={s.sum()}")
+        rep.append(f"    S/N {a_}-{b_ if b_ < 1e9 else 'inf'}: " + "; ".join(cells))
     txt = "\n".join(rep)
     print(txt)
     (OUT / "audit.txt").write_text(txt + "\n")
@@ -586,7 +661,7 @@ def main():
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
     for y, kind in enumerate(KINDS):
-        idx = [i for i in sorted(keep) if i % 3 == y][:10]
+        idx = [i for i in sorted(keep) if kind_of(i) == kind][:10]
         fig, ax = plt.subplots(len(idx), 2, figsize=(7, 1.6 * len(idx)))
         for r, i in enumerate(idx):
             xa, xb, ma, mb, info = keep[i]

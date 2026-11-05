@@ -2,28 +2,32 @@ split  sources(pool)  templates  backgrounds
 train     34        755         684
 val       26         89          89
 test      20        103          83
-frozen val: 3000 pairs from val, max source share 4.6%, sha256 54cc6d5710b0
-frozen test: 3000 pairs from test, max source share 5.6%, sha256 c444efd58603
-frozen stress: 3000 pairs from test, max source share 5.9%, sha256 337594c0850f
+  val: pairs 0..2999 reproduce the v1 hash
+frozen val: 4000 pairs from val, max source share 4.5%, sha256 d9b6f8f67215
+  test: pairs 0..2999 reproduce the v1 hash
+frozen test: 4000 pairs from test, max source share 5.6%, sha256 e9c120eaad9a
+  stress: pairs 0..2999 reproduce the v1 hash
+frozen stress: 4000 pairs from test, max source share 5.7%, sha256 1ac99f306ea3
 load_set('test') regenerates identical arrays
 (0) backgrounds vs their own file's contiguous off-pulse (n=856): lag-1 time median +0.006 vs -0.000, median |diff| 0.008; lag-1 freq +0.001 vs +0.001, median |diff| 0.005
 (a) per-member stats, KS p-values (members A and B pooled):
-    off_std   lensed-vs-repeat p=nan  lensed-vs-unrelated p=nan  medians 1.000/1.000/1.000
-    mask_frac lensed-vs-repeat p=0.666  lensed-vs-unrelated p=0.777  medians 0.805/0.805/0.805
-    snr_box   lensed-vs-repeat p=0.945  lensed-vs-unrelated p=0.466  medians 10.012/10.137/9.890
-    centre    lensed-vs-repeat p=0.017  lensed-vs-unrelated p=0.980  medians 77.000/77.000/77.000
-(b) shortcut probe, lensed vs repeat, n=4000: AUC 0.524 +- 0.013  [gate <= 0.55: PASS]
-    with centre offset added (a profile-similarity measurement, i.e. lensing information): AUC 0.564
+    off_std   lensed-vs-repeat p=nan  lensed-vs-unrelated p=nan  impostor-vs-repeat p=nan  medians 1.000/1.000/1.000/1.000
+    mask_frac lensed-vs-repeat p=0.069  lensed-vs-unrelated p=0.483  impostor-vs-repeat p=0.777  medians 0.805/0.805/0.805/0.805
+    snr_box   lensed-vs-repeat p=0.127  lensed-vs-unrelated p=0.648  impostor-vs-repeat p=0.000  medians 9.809/10.039/9.841/9.485
+    centre    lensed-vs-repeat p=0.888  lensed-vs-unrelated p=0.936  impostor-vs-repeat p=0.629  medians 77.000/77.000/77.000/77.000
+(b) shortcut probe, lensed vs repeat, n=4000: AUC 0.505 +- 0.022  [gate <= 0.55: PASS]
+    with centre offset added (a profile-similarity measurement, i.e. lensing information): AUC 0.549
+    impostor vs repeat, same non-spectral features, n=4000: AUC 0.515 +- 0.019  [gate <= 0.55: PASS]
     probe-power check, fitburst params of BOTH members: AUC 1.000 (expected ~1: equality is the lensing signal)
-(c) off-pulse noise correlation between members (T2): lensed +0.0001 (sd 0.0099)  repeat -0.0001 (sd 0.0104)  unrelated -0.0003 (sd 0.0105)
+(c) off-pulse noise correlation between members (T2): lensed +0.0001 (sd 0.0102)  repeat +0.0002 (sd 0.0099)  unrelated -0.0003 (sd 0.0109)  impostor +0.0001 (sd 0.0104)
     T1 at k=0.1: residual corr 0.019 (k^2/(1+k^2) = 0.010), median z 1.1 over 105 bright templates
     T1 at k=0.2: residual corr 0.060 (k^2/(1+k^2) = 0.038), median z 3.5 over 105 bright templates
     T1 at k=0.5: residual corr 0.272 (k^2/(1+k^2) = 0.200), median z 17.6 over 105 bright templates
-(d) baseline-1 xcorr medians: constructed lensed 0.017, repeat 0.014, unrelated 0.013; REAL repeat pairs 0.016 (n=2000); KS constructed-vs-real repeat p=2.59e-40
-    baseline-1 AUC lensed vs repeat, min S/N 10-15: 0.647 (n=2151)
-    baseline-1 AUC lensed vs repeat, min S/N 15-25: 0.756 (n=1275)
-    baseline-1 AUC lensed vs repeat, min S/N 25-50: 0.820 (n=464)
-    baseline-1 AUC lensed vs repeat, min S/N 50-inf: 0.869 (n=110)
+(d) baseline-1 xcorr medians: constructed lensed 0.017, repeat 0.014, unrelated 0.013, impostor 0.015; REAL repeat pairs 0.016 (n=2000); KS constructed-vs-real repeat p=1.43e-35
+    baseline-1 AUC, min S/N 10-15: lensed vs repeat 0.642, lensed vs impostor 0.594, impostor vs repeat 0.545 (n=4381)
+    baseline-1 AUC, min S/N 15-25: lensed vs repeat 0.759, lensed vs impostor 0.698, impostor vs repeat 0.570 (n=2535)
+    baseline-1 AUC, min S/N 25-50: lensed vs repeat 0.821, lensed vs impostor 0.711, impostor vs repeat 0.623 (n=844)
+    baseline-1 AUC, min S/N 50-inf: lensed vs repeat 0.788, lensed vs impostor 0.751, impostor vs repeat 0.550 (n=240)
     twin ladder (n=1000 real repeat pairs; gap = median(sim - real) / median(real)):
       variant                  full-res median     gap   25 MHz median     gap
       real                              0.0155   +0.0%          0.0846   +0.0%
@@ -35,4 +39,7 @@ load_set('test') regenerates identical arrays
       full, catalog S/N (v0)            0.0151   -9.5%          0.0757  -10.2%
       full (v1) vs real: Wilcoxon p=2.68e-12, Spearman r=0.66
       naked-vs-real gap, same-source -3.4%, different-source -5.2%; same/different contrast real +8.2%, naked +10.3%
+(e) real control FRB 20201124A: baseline-1 median xcorr of its real repeat pairs vs other sources' (by min S/N)
+    S/N 10-25: 20201124A 0.0171 (n=2344); other sources 0.0153 (n=2221)
+    S/N 25-inf: 20201124A 0.0255 (n=656); other sources 0.0403 (n=626)
 gallery: D:\vscode\AIwithFRBs\02_injection_labelling\01_injection\outputs/gallery_*.png
