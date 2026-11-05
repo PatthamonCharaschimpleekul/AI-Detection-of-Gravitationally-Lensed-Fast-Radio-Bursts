@@ -99,3 +99,15 @@ Script: `02_injection_labelling/01_injection/inject.py` (library with `make_pair
   - Scintillation depth is calibrated against the real fine-scale spectral variance before any v2 freeze.
 - "Equal shared noise in `repeat` pairs" cannot be executed: `repeat` members never share R_s. The only branch is "below probe sensitivity" (G-noise).
 - **Failure path:** any gate fails → ship v1 and report the quantified limitation (the arithmetic above) → discuss with the advisor. No tuning loop.
+
+## Addendum 2026-11-05 — permanent design decisions (independent of v1/v2)
+- **Track C (and every search threshold) is calibrated on real-data negatives only.** These are time-scrambled burst lists and cross-source real pairs, **stratified by pair S/N (min model S/N bins 10–15 / 15–25 / 25–50 / > 50) and by mask overlap**, so the negative distribution matches the selection of real candidates. Scores from simulated pairs set no absolute threshold. Simulation is used for ranking, ablations and ε only.
+- **Hold:** no Phase 3 training and no benchmark numbers in any document until the template question (v1 as is, or a new template) is closed in an update. The v0/v1 baseline-1 AUCs already written are diagnostic only.
+
+## Addendum 2026-11-05 — template question closed; Phase 3 requirements (fixed before any Phase 3 result)
+- **Closed with v1** (decision record: [update 1909](../update/2026-11-05_1909_template-closure-v1.md)). The training hold above is lifted.
+- **Headline bin, pre-specified:** the main Track B claim is made at **pair min model S/N ≥ 25** (bins 25–50 and > 50 pooled). There, real same/different contrast is +64% to +278% and the template offset is −6 to −10%. S/N 10–15 and 15–25 are reported alongside as secondary results, never as the headline. This choice is not revisited after seeing benchmark results.
+- **Real-negative transfer eval, a required Phase 3 step.** As soon as the first learned model (Siamese or 2-channel CNN) is trained, run inference on real repeat pairs and on time-scrambled / cross-source real pairs, stratified by S/N bin and mask overlap. Compare their score distributions with the simulated `repeat` / `unrelated` test pairs in the same bins.
+  - **Why:** the noise-ceiling result (update 1851) holds for baseline-1 scores. It does not automatically hold for a network that learns its own features.
+  - **Reuse:** the same real negatives are the Track C calibration set, so this one run serves both.
+  - Any per-bin shift beyond the baseline-1 offset (−6 to −10%) is reported and investigated before benchmark numbers are quoted.
