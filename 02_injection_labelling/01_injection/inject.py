@@ -1,0 +1,549 @@
+"""Track B pair injection: lensed copy / intrinsic repeat / unrelated pairs at 256 x 160.
+
+Plan: plan/2026-11-05_1254_pair-injection.md
+Usage: python -I inject.py            # build cache if missing, write frozen manifests, audit, gallery
+       python -I inject.py --rebuild  # rebuild the template/background cache from the raw files
+Library (training): from inject import load_pools, make_pair, load_set
+
+Rule: every member of every class = noise-free fitburst template (binned over ALL native
+channels) x per-member nuisances + an independent real off-pulse background from another
+file, whose channel mask and per-channel sigma the member inherits. All classes draw from
+the same source pool (>= 2 eligible templates) with uniform source sampling, and both
+members have injected S/N >= 10.
+"""
+import csv, hashlib, json, sys
+from pathlib import Path
+
+import h5py
+import numpy as np
+
+HERE = Path(__file__).resolve().parent
+REAL = HERE.parents[1] / "01_semi_synthetic_data" / "01_real_data" / "data" / "catalog2"
+CACHE = HERE / "data" / "inject_cache_256.h5"
+MAN = HERE / "manifests"
+OUT = HERE / "outputs"
+WIN, NF, DT_MS, OFF_PAD = 160, 256, 0.98304, 20
+SNR_MIN, R_MIN, OFF_MIN, DNU_DEFAULT, MODEL_SNR_MIN = 10.0, 0.05, 60, 49.0, 5.0
+KDM = 4.148808e6  # dispersion constant, ms MHz^2 / (pc cm^-3)
+BIG = ("FRB20220912A", "FRB20180916B")  # forced into train so they cannot dominate val/test
+KINDS = ("lensed", "repeat", "unrelated")
+# name: (split, n_pairs, seed, wide nuisances)
+SETS = {"val": ("val", 3000, 101, False), "test": ("test", 3000, 102, False), "stress": ("test", 3000, 103, True)}
+PAR_NAMES = ("n_comp", "width_max_ms", "scat_ms", "dm_fitb", "spec_index0", "spec_running0")
+
+
+def num(s):
+    try:
+        return float(s)
+    except (TypeError, ValueError):
+        return np.nan
+
+
+def extent_of(f, g):
+    """Copied from 01_real_data/preprocess_catalog2.py so the template crop is identical."""
+    from scipy.signal import medfilt
+    if "pulse_emission_region" in f.attrs:
+        pr = np.asarray(f.attrs["pulse_emission_region"], float).reshape(-1, 2)
+        pr = pr[np.isfinite(pr).all(1) & (pr[:, 1] >= pr[:, 0])]
+        if len(pr):
+            return int(pr[:, 0].min()), int(pr[:, 1].max())
+    if "model" in f:
+        p = np.where(g[:, None], np.nan_to_num(f["model"][:], nan=0.0, posinf=0.0, neginf=0.0), 0).sum(0)
+        on = p > 1e-3 * p.max()
+        if on.any():
+            return int(np.flatnonzero(on)[0]), int(np.flatnonzero(on)[-1])
+    p = medfilt(np.where(g[:, None], np.nan_to_num(f["data"][:], nan=0.0, posinf=0.0, neginf=0.0), 0).sum(0), 9)
+    k = int(p.argmax())
+    return k, k
+
+
+def build_cache():
+    """Templates (binned fitburst models) and mirror-tiled off-pulse backgrounds -> CACHE."""
+    with h5py.File(REAL / "preproc" / "repeaters_256x160.h5") as f:
+        X, FM, TM, NS = f["X"][:], f["freq_mask"][:], f["time_mask"][:], f["norm/std"][:]
+        meta = {k: f["meta/" + k][:] for k in f["meta"]}
+    tns = meta["tns"].astype(str)
+    dmerr = {}
+    for r in csv.DictReader(open(REAL / "chimefrbcat2.csv", newline="")):
+        v = num(r["dm_fitb_err"])
+        if np.isfinite(v) and v > 0 and r["tns_name"] not in dmerr:
+            dmerr[r["tns_name"]] = v
+    n = len(tns)
+    T = np.zeros((n, NF, WIN), np.float32)
+    has_model = np.zeros(n, bool)
+    par = np.full((n, len(PAR_NAMES)), np.nan)
+    freq = None
+    for i, t in enumerate(tns):
+        if meta["coarse_dt"][i]:
+            continue  # coarse files sit on another time grid; never templates or backgrounds
+        with h5py.File(REAL / "dynamic_spectra" / f"{t}_stokesi_dynamic_spectrum.h5") as f:
+            fr = f["index_map/freqs"][:].reshape(NF, -1).mean(1)
+            assert freq is None or np.allclose(fr, freq)
+            freq = fr
+            if "burst_parameters_json" in f.attrs:
+                bp = json.loads(f.attrs["burst_parameters_json"])
+                par[i] = [len(bp["arrival_time"]), 1e3 * np.nanmax(bp["burst_width"]),
+                          1e3 * bp["scattering_timescale"][0], bp["dm"][0],
+                          bp["spectral_index"][0], bp["spectral_running"][0]]
+            if "model" not in f:
+                continue
+            g = f["good_freq"][:].astype(bool)
+            lo, hi = extent_of(f, g)
+            start = (lo + hi + 1) // 2 - WIN // 2
+            assert lo - start == meta["extent_lo"][i], (t, lo - start, meta["extent_lo"][i])
+            m = np.nan_to_num(f["model"][:], nan=0.0, posinf=0.0, neginf=0.0)
+        mb = m.reshape(NF, -1, m.shape[1]).mean(1)  # all channels: the template's own mask must not leak
+        cols = np.arange(start, start + WIN)
+        ok = (cols >= 0) & (cols < mb.shape[1])
+        T[i][:, ok] = mb[:, cols[ok]]
+        has_model[i] = np.abs(T[i]).sum() > 0
+        if (i + 1) % 100 == 0:
+            print(f"  cache {i + 1}/{n}", flush=True)
+
+    # model-vs-data check in each file's own sigma units: s = matched-filter S/N of the model in
+    # the data, b = best-fit scale (b ~ 1 means model and data share units)
+    good = (FM >= 0.25)[:, :, None] & (TM[:, None, :] > 0)
+    Ts = np.where(good, T / np.maximum(NS, 1e-12)[:, :, None], 0.0)
+    tt = (Ts ** 2).sum((1, 2))
+    xt = (np.where(good, X, 0.0) * Ts).sum((1, 2))
+    model_snr = np.where(tt > 0, xt / np.sqrt(np.maximum(tt, 1e-30)), np.nan)
+    model_b = np.where(tt > 0, xt / np.maximum(tt, 1e-30), np.nan)
+
+    snr = meta["snr_fitb"].astype(float)
+    eligible = (has_model & (meta["coarse_dt"] == 0) & (meta["clipped"] == 0) & (meta["sidelobe_flag"] == 0)
+                & (model_snr >= MODEL_SNR_MIN) & (snr > 0) & np.array([t in dmerr for t in tns]))
+
+    # backgrounds: off-pulse columns (real samples, outside extent +- OFF_PAD), left+right
+    # segments joined, mirror-tiled to WIN. Inherit the file's freq_mask and norm/std.
+    bg_X, bg_idx = [], []
+    for i in range(n):
+        if meta["coarse_dt"][i]:
+            continue
+        c = np.arange(WIN)
+        off = c[(TM[i] > 0) & ((c < meta["extent_lo"][i] - OFF_PAD) | (c > meta["extent_hi"][i] + OFF_PAD))]
+        if len(off) < OFF_MIN:
+            continue
+        seq = np.concatenate([off, off[::-1]])
+        seq = np.tile(seq, WIN // len(seq) + 1)[:WIN]
+        bg_X.append(X[i][:, seq])
+        bg_idx.append(i)
+    bg_idx = np.array(bg_idx)
+
+    src = meta["source"].astype(str)
+    dnu_src = {}
+    for s in np.unique(src):
+        v = meta["dnu_d_khz"][(src == s) & (meta["dnu_good"] == 1)]
+        dnu_src[s] = float(np.median(v)) if len(v) else DNU_DEFAULT
+    CACHE.parent.mkdir(parents=True, exist_ok=True)
+    with h5py.File(CACHE, "w") as f:
+        f["T"] = T
+        f["eligible"] = eligible
+        f["model_snr"] = model_snr
+        f["model_b"] = model_b
+        f["par"] = par
+        f["dm_err"] = np.array([dmerr.get(t, np.nan) for t in tns])
+        f["dnu_khz"] = np.array([dnu_src[s] for s in src])
+        f["freq_mhz"] = freq
+        f["bg/X"] = np.stack(bg_X)
+        f["bg/file_idx"] = bg_idx
+        f["fm"] = FM
+        f["sigma"] = NS
+        for k in ("tns", "source", "snr_fitb", "mjd_400", "coarse_dt", "extent_lo", "extent_hi"):
+            f["meta/" + k] = meta[k]
+    print(f"cache: {eligible.sum()} eligible templates (has model {has_model.sum()}, model S/N<{MODEL_SNR_MIN:g}: "
+          f"{(has_model & (model_snr < MODEL_SNR_MIN)).sum()}), {len(bg_idx)} backgrounds; "
+          f"model scale b median {np.nanmedian(model_b[eligible]):.3f}")
+
+
+class Pools:
+    """Everything make_pair needs for one split."""
+
+    def __init__(self, c, split):
+        self.c, self.split = c, split
+        fs = c["file_split"]
+        self.tmpl = {}
+        for s in np.unique(c["source"][(fs == split) & c["eligible"]]):
+            t = np.flatnonzero((c["source"] == s) & c["eligible"])
+            if len(t) >= 2:  # decision 5: one pool for every class
+                self.tmpl[s] = t
+        self.sources = np.array(sorted(self.tmpl))
+        self.bgs = np.flatnonzero(fs[c["bg_file"]] == split)  # rows of bg/X
+        snr = c["snr_fitb"]
+        self.snr_pool = snr[snr >= SNR_MIN]  # catalog-wide S/N distribution, same for all splits
+
+
+def split_sources(source, seed=7):
+    """Sources -> train/val/test, 60/20/20 by burst count; BIG forced into train."""
+    names, counts = np.unique(source, return_counts=True)
+    rng = np.random.default_rng(seed)
+    order = [k for k in rng.permutation(len(names)) if names[k] not in BIG]
+    target = {"train": 0.6, "val": 0.2, "test": 0.2}
+    got = {"train": 0, "val": 0, "test": 0}
+    out = {n: "train" for n in BIG}
+    for k in order:
+        tot = sum(got.values()) + counts[k]
+        sp = max(target, key=lambda s: target[s] * tot - got[s])
+        out[names[k]] = sp
+        got[sp] += counts[k]
+    return out
+
+
+def load_pools():
+    c = {}
+    with h5py.File(CACHE) as f:
+        for k in ("T", "eligible", "model_snr", "par", "dm_err", "dnu_khz", "freq_mhz", "fm", "sigma"):
+            c[k] = f[k][:]
+        c["bg_X"], c["bg_file"] = f["bg/X"][:], f["bg/file_idx"][:]
+        for k in f["meta"]:
+            c[k] = f["meta/" + k][:]
+    c["source"] = c["source"].astype(str)
+    c["tns"] = c["tns"].astype(str)
+    sp = split_sources(c["source"])
+    c["file_split"] = np.array([sp[s] for s in c["source"]])
+    return {s: Pools(c, s) for s in ("train", "val", "test")}
+
+
+def fshift(a, d):
+    """Shift each row of a (nf, WIN) right by d samples (scalar or per-row), zero-padded, no wrap."""
+    n = 2 * WIN
+    F = np.fft.rfft(a, n, axis=1)
+    k = np.fft.rfftfreq(n)
+    F *= np.exp(-2j * np.pi * k[None, :] * np.atleast_1d(d)[:, None])
+    return np.fft.irfft(F, n, axis=1)[:, :WIN]
+
+
+def member(c, ti, bi, snr, rng, tau600, wide):
+    """One pair member: template ti on background row bi at injected matched-filter S/N snr."""
+    f = c["freq_mhz"]
+    fi = c["bg_file"][bi]
+    mask = c["fm"][fi] >= 0.25
+    sig = c["sigma"][fi]
+    med = np.median(sig[mask])
+    sig = np.clip(sig, med / 3, med * 3)  # nearly-masked channels must not blow up the template
+    S = c["T"][ti] / sig[:, None]  # physical template in the BACKGROUND file's sigma units
+    shift = rng.uniform(-1, 1) * (20 if wide else 10)
+    sdm = c["dm_err"][ti] * c["snr_fitb"][ti] / snr * (3 if wide else 1)
+    ddm = rng.normal(0, sdm)
+    S = fshift(S, shift + KDM * ddm * (f ** -2.0 - 600.0 ** -2.0) / DT_MS)
+    if tau600 > 0:
+        t = np.arange(WIN) * DT_MS
+        tau = tau600 * (f / 600.0) ** -4.0
+        ker = np.exp(-t[None, :] / tau[:, None])
+        ker /= ker.sum(1, keepdims=True)
+        S = np.fft.irfft(np.fft.rfft(S, 2 * WIN, axis=1) * np.fft.rfft(ker, 2 * WIN, axis=1), 2 * WIN, axis=1)[:, :WIN]
+    nsc = max(1.0, 1562.5 / c["dnu_khz"][ti])
+    gain = rng.gamma(nsc, 1.0 / nsc, NF)  # fresh scintillation pattern, the source's bandwidth
+    if wide:  # stress only: smooth beam/bandpass multiplier
+        x = (f - f[0]) / (f[-1] - f[0])
+        gain *= np.clip(1 + 0.3 * sum(rng.normal() * np.cos(2 * np.pi * k * x + rng.uniform(0, 2 * np.pi))
+                                      for k in (1, 2, 3)) / np.sqrt(3), 0.05, None)
+    S *= gain[:, None]
+    S[~mask] = 0.0
+    a = snr / np.sqrt((S ** 2).sum())
+    out = a * S + c["bg_X"][bi]
+    # re-normalise per channel exactly like preprocessing: off-pulse = outside the injected extent +- OFF_PAD
+    prof = S.sum(0)
+    on = np.flatnonzero(np.abs(prof) > 1e-3 * np.abs(prof).max())
+    cols = np.arange(WIN)
+    off = (cols < on[0] - OFF_PAD) | (cols > on[-1] + OFF_PAD)
+    if off.sum() >= 10:
+        mu, sd = out[:, off].mean(1), out[:, off].std(1)
+        out = np.where(mask[:, None], (out - mu[:, None]) / np.where(sd > 0, sd, 1.0)[:, None], 0.0)
+    out[~mask] = 0.0
+    info = dict(shift=shift, ddm=ddm, tau600=tau600, ext_lo=int(on[0]), ext_hi=int(on[-1]))
+    return out.astype(np.float32), mask, info
+
+
+def make_pair(kind, rng, P, wide=False):
+    """Returns xa, xb (NF, WIN) float32, mask_a, mask_b, label (0 lensed, 1 repeat, 2 unrelated), info."""
+    c = P.c
+    s = P.sources[rng.integers(len(P.sources))]
+    if kind == "lensed":
+        ta = tb = rng.choice(P.tmpl[s])
+        s2 = s
+    elif kind == "repeat":
+        ta, tb = rng.choice(P.tmpl[s], 2, replace=False)
+        s2 = s
+    else:
+        others = P.sources[P.sources != s]
+        s2 = others[rng.integers(len(others))]
+        ta, tb = rng.choice(P.tmpl[s]), rng.choice(P.tmpl[s2])
+    snr_a = float(rng.choice(P.snr_pool))
+    r = float(np.exp(rng.uniform(np.log(max(R_MIN, SNR_MIN / snr_a)), 0.0)))  # S/N_b >= SNR_MIN
+    snr_b = r * snr_a
+    ba, bb = rng.choice(P.bgs, 2, replace=False)
+    while c["bg_file"][bb] == c["bg_file"][ba] or c["bg_file"][bb] in (ta, tb) or c["bg_file"][ba] in (ta, tb):
+        ba, bb = rng.choice(P.bgs, 2, replace=False)  # backgrounds never from the template's own file
+    hi = 3.0 if wide else 1.0
+    tau = float(np.exp(rng.uniform(np.log(0.01), np.log(hi)))) if rng.random() < 0.5 else 0.0
+    which = int(rng.integers(2))
+    xa, ma, ia = member(c, ta, ba, snr_a, rng, tau if which == 0 else 0.0, wide)
+    xb, mb, ib = member(c, tb, bb, snr_b, rng, tau if which == 1 else 0.0, wide)
+    swap = bool(rng.random() < 0.5)
+    info = dict(kind=kind, src_a=s, src_b=s2, tmpl_a=c["tns"][ta], tmpl_b=c["tns"][tb], ti_a=int(ta), ti_b=int(tb),
+                bg_a=c["tns"][c["bg_file"][ba]], bg_b=c["tns"][c["bg_file"][bb]], bi_a=int(ba), bi_b=int(bb),
+                snr_a=snr_a, snr_b=snr_b, scat_member=which if tau > 0 else -1, tau600=tau,
+                **{k + "_a": v for k, v in ia.items() if k != "tau600"}, **{k + "_b": v for k, v in ib.items() if k != "tau600"})
+    if swap:  # random order; info keeps the pre-swap labels plus the flag
+        xa, xb, ma, mb = xb, xa, mb, ma
+    info["swapped"] = swap
+    return xa, xb, ma, mb, KINDS.index(kind), info
+
+
+def gen_set(P, n, seed, wide):
+    """Deterministic: pair i uses rng([seed, i]) and kind KINDS[i % 3]."""
+    for i in range(n):
+        yield (i,) + make_pair(KINDS[i % 3], np.random.default_rng([seed, i]), P, wide)
+
+
+def load_set(name, pools=None):
+    """Regenerate a frozen set and check it against its manifest hash. Returns arrays + labels."""
+    pools = pools or load_pools()
+    split, n, seed, wide = SETS[name]
+    exp = json.loads((MAN / f"{name}.json").read_text())
+    h = hashlib.sha256()
+    XA, XB, MA, MB, Y = [], [], [], [], []
+    for i, xa, xb, ma, mb, y, _ in gen_set(pools[split], n, seed, wide):
+        h.update(xa.tobytes()); h.update(xb.tobytes())
+        XA.append(xa); XB.append(xb); MA.append(ma); MB.append(mb); Y.append(y)
+    assert h.hexdigest() == exp["sha256"], f"{name}: regenerated set differs from its manifest (code or inputs changed)"
+    return np.stack(XA), np.stack(XB), np.stack(MA), np.stack(MB), np.array(Y)
+
+
+# ---------------- audit helpers ----------------
+def member_stats(x, m, lo, hi):
+    cols = np.arange(WIN)
+    off = (cols < lo - OFF_PAD) | (cols > hi + OFF_PAD)
+    band = x[m].mean(0)
+    sm = np.convolve(band, np.ones(3) / 3, "same")
+    bs = max((np.convolve(band, np.ones(w), "same") / np.sqrt(w)).max() for w in (1, 2, 4, 8, 16)) * np.sqrt(m.sum())
+    return dict(off_std=float(x[m][:, off].std()) if off.any() else np.nan, mask_frac=float(m.mean()),
+                snr_box=float(bs), centre=int(sm.argmax()))
+
+
+def xcorr(a, ma, b, mb, maxlag=20):
+    """Baseline 1: max normalised cross-correlation over +-maxlag samples, common channels."""
+    m = ma & mb
+    A, B = a[m], b[m]
+    n = 2 * WIN
+    cc = np.fft.irfft((np.fft.rfft(A, n, axis=1) * np.conj(np.fft.rfft(B, n, axis=1))).sum(0), n)
+    cc = np.concatenate([cc[-maxlag:], cc[:maxlag + 1]])
+    return float(cc.max() / np.sqrt((A ** 2).sum() * (B ** 2).sum() + 1e-30))
+
+
+def main():
+    if "--rebuild" in sys.argv or not CACHE.exists():
+        build_cache()
+    # self-check of the shift primitive: integer and DM shifts move a delta where expected
+    d = np.zeros((2, WIN)); d[:, 50] = 1
+    assert np.allclose(fshift(d, 7)[:, 57], 1, atol=1e-9) and np.allclose(fshift(d, np.array([0.0, 3.0]))[1, 53], 1, atol=1e-9)
+
+    pools = load_pools()
+    c = pools["train"].c
+    print("split  sources(pool)  templates  backgrounds")
+    for s, P in pools.items():
+        print(f"{s:6s} {len(P.sources):5d} {sum(len(v) for v in P.tmpl.values()):10d} {len(P.bgs):11d}")
+    # split-disjointness: templates and backgrounds only from their own split's files
+    for s, P in pools.items():
+        assert all((c["file_split"][t] == s).all() for t in P.tmpl.values())
+        assert (c["file_split"][c["bg_file"][P.bgs]] == s).all()
+    assert not (set(pools["train"].sources) & set(pools["test"].sources))
+
+    # ---- frozen sets: manifest + hash ----
+    MAN.mkdir(exist_ok=True)
+    OUT.mkdir(exist_ok=True)
+    keep = {}
+    for name, (split, n, seed, wide) in SETS.items():
+        h = hashlib.sha256()
+        rows = []
+        for i, xa, xb, ma, mb, y, info in gen_set(pools[split], n, seed, wide):
+            assert xa.shape == xb.shape == (NF, WIN) and np.isfinite(xa).all() and np.isfinite(xb).all()
+            assert not xa[~ma].any() and not xb[~mb].any(), "masked channels must be zero"
+            assert info["snr_b"] >= SNR_MIN - 1e-9 and info["snr_a"] >= SNR_MIN
+            h.update(xa.tobytes()); h.update(xb.tobytes())
+            rows.append(dict(i=i, seed=f"{seed}:{i}", label=y, **info))
+            if name == "test" and i < 30:
+                keep[i] = (xa, xb, ma, mb, info)
+        with open(MAN / f"{name}.csv", "w", newline="") as f:
+            w = csv.DictWriter(f, fieldnames=list(rows[0]))
+            w.writeheader()
+            w.writerows(rows)
+        srcshare = max(np.unique([r["src_a"] for r in rows], return_counts=True)[1]) / n
+        (MAN / f"{name}.json").write_text(json.dumps(dict(split=split, n=n, seed=seed, wide=wide, sha256=h.hexdigest(),
+                                                          max_source_share=round(float(srcshare), 3)), indent=1))
+        print(f"frozen {name}: {n} pairs from {split}, max source share {srcshare:.1%}, sha256 {h.hexdigest()[:12]}")
+    load_set("test", pools)  # regeneration reproduces the hash
+    print("load_set('test') regenerates identical arrays")
+
+    # ---- leak audit on a separate train-split set (2000 pairs per class) ----
+    P = pools["train"]
+    sidx = {s: k for k, s in enumerate(np.unique(c["source"]))}  # stable categorical code
+    rows = []
+    for i, xa, xb, ma, mb, y, info in gen_set(P, 6000, 999, False):
+        ea, eb = (info["ext_lo_a"], info["ext_hi_a"]), (info["ext_lo_b"], info["ext_hi_b"])
+        if info["swapped"]:
+            ea, eb = eb, ea
+        sa = member_stats(xa, ma, *ea)
+        sb = member_stats(xb, mb, *eb)
+        both = ma & mb
+        lo = min(info["ext_lo_a"], info["ext_lo_b"]) - OFF_PAD
+        hi = max(info["ext_hi_a"], info["ext_hi_b"]) + OFF_PAD
+        cols = np.arange(WIN)
+        off = (cols < lo) | (cols > hi)
+        nc = np.corrcoef(xa[both][:, off].ravel(), xb[both][:, off].ravel())[0, 1] if off.sum() > 5 and both.any() else np.nan
+        ti_first = info["ti_b"] if info["swapped"] else info["ti_a"]
+        bi_a, bi_b = (info["bi_b"], info["bi_a"]) if info["swapped"] else (info["bi_a"], info["bi_b"])
+        rows.append(dict(y=y, sa=sa, sb=sb, noise_corr=nc, xc=xcorr(xa, ma, xb, mb),
+                         snr_min=min(info["snr_a"], info["snr_b"]),
+                         centre_off=sa["centre"] - sb["centre"],
+                         # off_std is exactly 1 after re-normalisation, so not a feature; the centre
+                         # offset measures profile similarity (lensing information), reported separately
+                         f=[(ma & mb).sum() / max((ma | mb).sum(), 1), np.log(sa["snr_box"] / max(sb["snr_box"], 1e-3)),
+                            sidx[c["source"][c["bg_file"][bi_a]]], sidx[c["source"][c["bg_file"][bi_b]]],
+                            c["mjd_400"][c["bg_file"][bi_a]], c["mjd_400"][c["bg_file"][bi_b]],
+                            *c["par"][ti_first], c["snr_fitb"][ti_first], c["model_snr"][ti_first]],
+                         par_both=[*c["par"][info["ti_a"]], *c["par"][info["ti_b"]]]))
+    from scipy.stats import ks_2samp
+    from sklearn.ensemble import HistGradientBoostingClassifier
+    from sklearn.metrics import roc_auc_score
+    from sklearn.model_selection import cross_val_score
+    rep = []
+    # plan step 3, revised: the 20 genuine chunks come from 5 long-window files whose noise is
+    # time-correlated (lag-1 0.05-0.16) unlike the 158-sample files (~0), so they are not a fair
+    # reference. Paired check instead: each tiled background vs one contiguous off-pulse run of its own file.
+    with h5py.File(REAL / "preproc" / "repeaters_256x160.h5") as f:
+        TMr0 = f["time_mask"][:]
+    Xr0 = None
+    with h5py.File(REAL / "preproc" / "repeaters_256x160.h5") as f:
+        Xr0 = f["X"][:]
+    lt, lr_, lft, lfr = [], [], [], []
+    for b_, fi in enumerate(c["bg_file"]):
+        m = c["fm"][fi] >= 0.25
+        cols = np.arange(WIN)
+        off = cols[(TMr0[fi] > 0) & ((cols < c["extent_lo"][fi] - OFF_PAD) | (cols > c["extent_hi"][fi] + OFF_PAD))]
+        brk = np.flatnonzero(np.diff(off) > 1)
+        run = off[:brk[0] + 1] if len(brk) and brk[0] + 1 >= len(off) - brk[0] - 1 else (off[brk[0] + 1:] if len(brk) else off)
+        if len(run) < 20:
+            continue
+        v, t = Xr0[fi][m][:, run], c["bg_X"][b_][m]
+        lr_.append(np.corrcoef(v[:, :-1].ravel(), v[:, 1:].ravel())[0, 1]); lt.append(np.corrcoef(t[:, :-1].ravel(), t[:, 1:].ravel())[0, 1])
+        lfr.append(np.corrcoef(v[:-1].ravel(), v[1:].ravel())[0, 1]); lft.append(np.corrcoef(t[:-1].ravel(), t[1:].ravel())[0, 1])
+    lt, lr_, lft, lfr = map(np.array, (lt, lr_, lft, lfr))
+    rep.append(f"(0) backgrounds vs their own file's contiguous off-pulse (n={len(lt)}): lag-1 time median {np.median(lt):+.3f} vs "
+               f"{np.median(lr_):+.3f}, median |diff| {np.median(np.abs(lt - lr_)):.3f}; lag-1 freq {np.median(lft):+.3f} vs "
+               f"{np.median(lfr):+.3f}, median |diff| {np.median(np.abs(lft - lfr)):.3f}")
+    Y = np.array([r["y"] for r in rows])
+    rep.append("(a) per-member stats, KS p-values (members A and B pooled):")
+    for k in ("off_std", "mask_frac", "snr_box", "centre"):
+        v = {y: np.array([r[s][k] for r in rows if r["y"] == y for s in ("sa", "sb")]) for y in range(3)}
+        p01, p02 = ks_2samp(v[0], v[1]).pvalue, ks_2samp(v[0], v[2]).pvalue
+        rep.append(f"    {k:9s} lensed-vs-repeat p={p01:.3f}  lensed-vs-unrelated p={p02:.3f}  "
+                   f"medians {np.nanmedian(v[0]):.3f}/{np.nanmedian(v[1]):.3f}/{np.nanmedian(v[2]):.3f}")
+    lr = Y < 2
+    F = np.array([r["f"] for r in rows], float)[lr]
+    gbm = HistGradientBoostingClassifier(random_state=0)
+    auc = cross_val_score(gbm, F, Y[lr], cv=5, scoring="roc_auc")
+    Fb = np.array([r["par_both"] for r in rows], float)[lr]
+    auc_both = cross_val_score(gbm, Fb, Y[lr], cv=5, scoring="roc_auc")
+    rep.append(f"(b) shortcut probe, lensed vs repeat, n={lr.sum()}: AUC {auc.mean():.3f} +- {auc.std():.3f}  "
+               f"[gate <= 0.55: {'PASS' if auc.mean() <= 0.55 else 'FAIL'}]")
+    Fc = np.column_stack([F, np.array([r["centre_off"] for r in rows], float)[lr]])
+    auc_c = cross_val_score(gbm, Fc, Y[lr], cv=5, scoring="roc_auc")
+    rep.append(f"    with centre offset added (a profile-similarity measurement, i.e. lensing information): AUC {auc_c.mean():.3f}")
+    rep.append(f"    probe-power check, fitburst params of BOTH members: AUC {auc_both.mean():.3f} (expected ~1: equality is the lensing signal)")
+    nc = {y: np.array([r["noise_corr"] for r in rows if r["y"] == y]) for y in range(3)}
+    rep.append("(c) off-pulse noise correlation between members (T2): " +
+               "  ".join(f"{KINDS[y]} {np.nanmean(nc[y]):+.4f} (sd {np.nanstd(nc[y]):.4f})" for y in range(3)))
+    # T1 trap demo: scaled real data in the on-pulse box shares the template's noise
+    with h5py.File(REAL / "preproc" / "repeaters_256x160.h5") as f:
+        Xr, FMr, TMr = f["X"][:], f["freq_mask"][:], f["time_mask"][:]
+    bright = np.flatnonzero(c["eligible"] & (c["snr_fitb"] >= 50))
+    rng = np.random.default_rng(5)
+    for k in (0.1, 0.2, 0.5):
+        zs, cs = [], []
+        for ti in bright:
+            m = (FMr[ti] >= 0.25)
+            lo, hi = c["extent_lo"][ti] - 2, c["extent_hi"][ti] + 3
+            box = np.zeros((NF, WIN), bool); box[m, max(lo, 0):min(hi, WIN)] = True
+            Ts = np.where(m[:, None], c["T"][ti] / np.maximum(c["sigma"][ti], 1e-12)[:, None], 0)
+            b = (Xr[ti][box] * Ts[box]).sum() / max((Ts[box] ** 2).sum(), 1e-30)
+            b1, b2 = rng.choice(len(c["bg_X"]), 2, replace=False)
+            r1 = k * (Xr[ti] - b * Ts) + c["bg_X"][b1]
+            r2 = k * (Xr[ti] - b * Ts) + c["bg_X"][b2]
+            msk = box & (c["fm"][c["bg_file"][b1]] >= 0.25)[:, None] & (c["fm"][c["bg_file"][b2]] >= 0.25)[:, None]
+            if msk.sum() < 20:
+                continue
+            cc = np.corrcoef(r1[msk], r2[msk])[0, 1]
+            cs.append(cc); zs.append(cc * np.sqrt(msk.sum()))
+        rep.append(f"    T1 at k={k}: residual corr {np.mean(cs):.3f} (k^2/(1+k^2) = {k*k/(1+k*k):.3f}), "
+                   f"median z {np.median(zs):.1f} over {len(cs)} bright templates")
+    # (d) baseline 1 on constructed vs real as-observed repeat pairs
+    xc = {y: np.array([r["xc"] for r in rows if r["y"] == y]) for y in range(3)}
+    real_src = c["source"]
+    ok = (c["coarse_dt"] == 0) & (c["snr_fitb"] >= SNR_MIN)
+    rr = np.random.default_rng(11)
+    real = []
+    byS = {s: np.flatnonzero(ok & (real_src == s)) for s in np.unique(real_src)}
+    byS = {s: v for s, v in byS.items() if len(v) >= 2}
+    keys = sorted(byS)
+    for _ in range(2000):  # uniform over sources, like the constructed pairs
+        v = byS[keys[rr.integers(len(keys))]]
+        i, j = rr.choice(v, 2, replace=False)
+        real.append(xcorr(Xr[i], FMr[i] >= 0.25, Xr[j], FMr[j] >= 0.25))
+    real = np.array(real)
+    # paired twins: each real repeat pair (i, j) re-simulated from its own two templates at their
+    # catalog S/N on fresh backgrounds -> the gap is template-vs-real plus nuisances only
+    el = np.flatnonzero(c["eligible"])
+    byT = {s: el[c["source"][el] == s] for s in np.unique(c["source"][el])}
+    byT = {s: v for s, v in byT.items() if len(v) >= 2}
+    kT = sorted(byT)
+    tw_real, tw_sim = [], []
+    for _ in range(1000):
+        i, j = rr.choice(byT[kT[rr.integers(len(kT))]], 2, replace=False)
+        b1, b2 = rr.choice(np.flatnonzero(~np.isin(c["bg_file"], [i, j])), 2, replace=False)
+        xi, mi, _ = member(c, i, b1, max(c["snr_fitb"][i], SNR_MIN), rr, 0.0, False)
+        xj, mj, _ = member(c, j, b2, max(c["snr_fitb"][j], SNR_MIN), rr, 0.0, False)
+        tw_sim.append(xcorr(xi, mi, xj, mj))
+        tw_real.append(xcorr(Xr[i], FMr[i] >= 0.25, Xr[j], FMr[j] >= 0.25))
+    tw_real, tw_sim = np.array(tw_real), np.array(tw_sim)
+    from scipy.stats import wilcoxon
+    twin_line = (f"    paired twins (n=1000): real median {np.median(tw_real):.3f}, simulated median {np.median(tw_sim):.3f}, "
+               f"median(sim-real) {np.median(tw_sim - tw_real):+.3f}, Wilcoxon p={wilcoxon(tw_sim, tw_real).pvalue:.2e}, "
+               f"Spearman r={np.corrcoef(np.argsort(np.argsort(tw_real)), np.argsort(np.argsort(tw_sim)))[0, 1]:.2f}")
+    rep.append(f"(d) baseline-1 xcorr medians: constructed lensed {np.median(xc[0]):.3f}, repeat {np.median(xc[1]):.3f}, "
+               f"unrelated {np.median(xc[2]):.3f}; REAL repeat pairs {np.median(real):.3f} (n=2000); "
+               f"KS constructed-vs-real repeat p={ks_2samp(xc[1], real).pvalue:.2e}")
+    smin = np.array([r["snr_min"] for r in rows])
+    for a_, b_ in ((10, 15), (15, 25), (25, 50), (50, 1e9)):
+        s = lr & (smin >= a_) & (smin < b_)
+        if s.sum() > 50 and len(set(Y[s])) == 2:
+            rep.append(f"    baseline-1 AUC lensed vs repeat, min S/N {a_}-{b_ if b_ < 1e9 else 'inf'}: "
+                       f"{roc_auc_score(Y[s] == 0, np.array([r['xc'] for r in rows])[s]):.3f} (n={s.sum()})")
+    rep.append(twin_line)
+    txt = "\n".join(rep)
+    print(txt)
+    (OUT / "audit.txt").write_text(txt + "\n")
+
+    # ---- gallery: 10 test pairs per class ----
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    for y, kind in enumerate(KINDS):
+        idx = [i for i in sorted(keep) if i % 3 == y][:10]
+        fig, ax = plt.subplots(len(idx), 2, figsize=(7, 1.6 * len(idx)))
+        for r, i in enumerate(idx):
+            xa, xb, ma, mb, info = keep[i]
+            for col, x in enumerate((xa, xb)):
+                ax[r, col].imshow(x, aspect="auto", origin="lower", vmin=-2, vmax=4, cmap="viridis")
+                ax[r, col].set_xticks([]); ax[r, col].set_yticks([])
+            ax[r, 0].set_ylabel(f"#{i}", fontsize=7)
+            ax[r, 1].set_title(f"{info['tmpl_a']} | {info['tmpl_b']}  S/N {info['snr_a']:.0f}/{info['snr_b']:.0f}", fontsize=6)
+        fig.suptitle(f"test pairs: {kind}")
+        fig.tight_layout()
+        fig.savefig(OUT / f"gallery_{kind}.png", dpi=110)
+        plt.close(fig)
+    print(f"gallery: {OUT}/gallery_*.png")
+
+
+if __name__ == "__main__":
+    main()

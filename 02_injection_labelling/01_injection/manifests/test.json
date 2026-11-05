@@ -1,0 +1,8 @@
+{
+ "split": "test",
+ "n": 3000,
+ "seed": 102,
+ "wide": false,
+ "sha256": "c05f91bbe328798ab3a31a57a07b55d50fa97663b5b9c85e6811211ef129562c",
+ "max_source_share": 0.056
+}

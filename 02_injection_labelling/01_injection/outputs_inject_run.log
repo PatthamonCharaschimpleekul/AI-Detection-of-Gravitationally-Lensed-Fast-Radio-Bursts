@@ -1,0 +1,28 @@
+split  sources(pool)  templates  backgrounds
+train     34        755         684
+val       26         89          89
+test      20        103          83
+frozen val: 3000 pairs from val, max source share 4.6%, sha256 cdf9cfcd2475
+frozen test: 3000 pairs from test, max source share 5.6%, sha256 c05f91bbe328
+frozen stress: 3000 pairs from test, max source share 5.9%, sha256 084d04ece736
+load_set('test') regenerates identical arrays
+(0) backgrounds vs their own file's contiguous off-pulse (n=856): lag-1 time median +0.006 vs -0.000, median |diff| 0.008; lag-1 freq +0.001 vs +0.001, median |diff| 0.005
+(a) per-member stats, KS p-values (members A and B pooled):
+    off_std   lensed-vs-repeat p=nan  lensed-vs-unrelated p=nan  medians 1.000/1.000/1.000
+    mask_frac lensed-vs-repeat p=0.666  lensed-vs-unrelated p=0.777  medians 0.805/0.805/0.805
+    snr_box   lensed-vs-repeat p=0.629  lensed-vs-unrelated p=0.097  medians 9.759/9.737/9.580
+    centre    lensed-vs-repeat p=0.017  lensed-vs-unrelated p=0.985  medians 77.000/77.000/77.000
+(b) shortcut probe, lensed vs repeat, n=4000: AUC 0.519 +- 0.009  [gate <= 0.55: PASS]
+    with centre offset added (a profile-similarity measurement, i.e. lensing information): AUC 0.554
+    probe-power check, fitburst params of BOTH members: AUC 1.000 (expected ~1: equality is the lensing signal)
+(c) off-pulse noise correlation between members (T2): lensed +0.0001 (sd 0.0100)  repeat -0.0000 (sd 0.0104)  unrelated -0.0003 (sd 0.0104)
+    T1 at k=0.1: residual corr 0.019 (k^2/(1+k^2) = 0.010), median z 1.1 over 105 bright templates
+    T1 at k=0.2: residual corr 0.060 (k^2/(1+k^2) = 0.038), median z 3.5 over 105 bright templates
+    T1 at k=0.5: residual corr 0.272 (k^2/(1+k^2) = 0.200), median z 17.6 over 105 bright templates
+(d) baseline-1 xcorr medians: constructed lensed 0.017, repeat 0.014, unrelated 0.013; REAL repeat pairs 0.016 (n=2000); KS constructed-vs-real repeat p=5.24e-39
+    baseline-1 AUC lensed vs repeat, min S/N 10-15: 0.651 (n=2223)
+    baseline-1 AUC lensed vs repeat, min S/N 15-25: 0.744 (n=1249)
+    baseline-1 AUC lensed vs repeat, min S/N 25-50: 0.824 (n=439)
+    baseline-1 AUC lensed vs repeat, min S/N 50-inf: 0.878 (n=89)
+    paired twins (n=1000): real median 0.016, simulated median 0.015, median(sim-real) -0.002, Wilcoxon p=1.26e-26, Spearman r=0.63
+gallery: D:\vscode\AIwithFRBs\02_injection_labelling\01_injection\outputs/gallery_*.png
