@@ -28,19 +28,14 @@ SNR_MIN, R_MIN, OFF_MIN, DNU_DEFAULT, MODEL_SNR_MIN = 10.0, 0.05, 60, 49.0, 5.0
 KDM = 4.148808e6  # dispersion constant, ms MHz^2 / (pc cm^-3)
 BIG = ("FRB20220912A", "FRB20180916B")  # forced into train so they cannot dominate val/test
 KINDS = ("lensed", "repeat", "unrelated", "impostor")
-VERSION = "v1.2"  # v0 (496c048) catalog snr_fitb; v1 measured model S/N; v1.1 = v1 + 1000 impostor pairs; v1.2 adds bright sets
+VERSION = "v1.3"  # v0 (496c048) catalog snr_fitb; v1 measured model S/N; v1.1 = v1 + 1000 impostor pairs; v1.2 adds bright sets;
+# v1.3 drops near-empty backgrounds and stops dividing by a near-zero off-pulse sigma
 BRIGHT = 25.0  # headline bin floor on pair min S/N (plan 2026-11-06_1223)
 # name: (split, n_pairs, seed, wide nuisances, S/N floor); bright sets cycle all four kinds
 SETS = {"val": ("val", 4000, 101, False, SNR_MIN), "test": ("test", 4000, 102, False, SNR_MIN),
         "stress": ("test", 4000, 103, True, SNR_MIN),
         "val_bright": ("val", 8000, 201, False, BRIGHT), "test_bright": ("test", 16000, 202, False, BRIGHT)}
-LEGACY = 3000  # pairs 0..2999 are exactly the v1 sets (kinds cycle lensed/repeat/unrelated); 3000.. are impostors
-V1_SHA = {"val": "54cc6d5710b04dbc700525826167a9d61497c8ea2af05b91f3b99fa36fe98847",
-          "test": "c444efd58603f19578cd20ae437d3e285d8443913e2d2c90b459aff4bd67a53a",
-          "stress": "337594c0850f757ee50475e6e5a3acf1c8b7b95f10c7d9f528ae3f90367cc76b"}
-V11_SHA = {"val": "d9b6f8f6721509922005f2264e639e45e80efad182641cc3e30437416af73e07",
-           "test": "e9c120eaad9aa097211b89210141b4da067167c2956082d52e57b5e5cb8a06d6",
-           "stress": "1ac99f306ea34de3dae3108f39095bd51f48cd45d2429a5b2aeff784b87167ab"}
+LEGACY = 3000  # pairs 0..2999 cycle lensed/repeat/unrelated; 3000.. are impostors
 # I1 shared spectral envelope: a host plasma lens imposes one band shape on every burst while a caustic lasts
 # (hours-days; Cordes et al. 2017, ApJ 842, 35). Implemented as envelope transfer: member B keeps its own
 # time-frequency structure but takes member A's 25 MHz-smoothed spectral envelope, so each member's marginal
@@ -184,7 +179,7 @@ class Pools:
             if len(t) >= 2:  # decision 5: one pool for every class
                 self.tmpl[s] = t
         self.sources = np.array(sorted(self.tmpl))
-        self.bgs = np.flatnonzero(fs[c["bg_file"]] == split)  # rows of bg/X
+        self.bgs = np.flatnonzero((fs[c["bg_file"]] == split) & c["bg_ok"])  # rows of bg/X
         # v1: matched-filter S/N of the model in the real data (catalog snr_fitb is ~3.7% lower,
         # which made v0 members systematically fainter than the bursts they stand for)
         snr = c["model_snr"][np.isfinite(c["model_snr"])]
@@ -219,6 +214,8 @@ def load_pools():
     c["tns"] = c["tns"].astype(str)
     sp = split_sources(c["source"])
     c["file_split"] = np.array([sp[s] for s in c["source"]])
+    # two files have almost no valid off-pulse data, so their "noise" is zeros
+    c["bg_ok"] = np.array([np.median(x[c["fm"][f] >= 0.25].std(1)) > 0.5 for x, f in zip(c["bg_X"], c["bg_file"])])
     return {s: Pools(c, s) for s in ("train", "val", "test")}
 
 
@@ -279,8 +276,9 @@ def member(c, ti, bi, snr, rng, tau600, wide, off=(), gain_shared=None, scint_sh
     off = (cols < on[0] - OFF_PAD) | (cols > on[-1] + OFF_PAD)
     if off.sum() >= 10:
         mu, sd = out[:, off].mean(1), out[:, off].std(1)
-        out = np.where(mask[:, None], (out - mu[:, None]) / np.where(sd > 0, sd, 1.0)[:, None], 0.0)
+        out = np.where(mask[:, None], (out - mu[:, None]) / np.where(sd > 0.2, sd, 1.0)[:, None], 0.0)  # off-pulse is unit-variance: sd << 1 means flagged zeros
     out[~mask] = 0.0
+    assert np.abs(out).max() < 1e4, f"runaway pixel: template {ti}, background {bi}"
     info = dict(shift=shift, ddm=ddm, tau600=tau600, ext_lo=int(on[0]), ext_hi=int(on[-1]))
     return out.astype(np.float32), mask, info
 
@@ -345,7 +343,7 @@ def make_pair(kind, rng, P, wide=False, snr_floor=SNR_MIN):
 
 
 def kind_of(i, cycle4=False):
-    """Frozen sets: i < LEGACY cycles the three v1 kinds (identical to v1), later i are impostors.
+    """Frozen sets: i < LEGACY cycles the three v1 kinds, later i are impostors.
     cycle4: all four kinds in turn (audit sets)."""
     if cycle4:
         return KINDS[i % 4]
@@ -430,9 +428,6 @@ def main():
         h = hashlib.sha256()
         rows = []
         for i, xa, xb, ma, mb, y, info in gen_set(pools[split], n, seed, wide, floor > SNR_MIN, floor):
-            if i == LEGACY and name in V1_SHA:
-                assert h.hexdigest() == V1_SHA[name], f"{name}: pairs 0..{LEGACY - 1} no longer reproduce v1"
-                print(f"  {name}: pairs 0..{LEGACY - 1} reproduce the v1 hash")
             assert xa.shape == xb.shape == (NF, WIN) and np.isfinite(xa).all() and np.isfinite(xb).all()
             assert not xa[~ma].any() and not xb[~mb].any(), "masked channels must be zero"
             assert min(info["snr_a"], info["snr_b"]) >= floor - 1e-9
@@ -440,7 +435,6 @@ def main():
             rows.append(dict(i=i, seed=f"{seed}:{i}", label=y, **info))
             if name == "test" and (i < 30 or LEGACY <= i < LEGACY + 10):
                 keep[i] = (xa, xb, ma, mb, info)
-        assert name not in V11_SHA or h.hexdigest() == V11_SHA[name], f"{name}: no longer reproduces v1.1"
         with open(MAN / f"{name}.csv", "w", newline="") as f:
             w = csv.DictWriter(f, fieldnames=list(rows[0]))
             w.writeheader()

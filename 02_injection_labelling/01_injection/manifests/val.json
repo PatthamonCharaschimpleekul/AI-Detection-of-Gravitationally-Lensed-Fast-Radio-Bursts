@@ -4,7 +4,7 @@
  "seed": 101,
  "wide": false,
  "snr_floor": 10.0,
- "version": "v1.2",
- "sha256": "d9b6f8f6721509922005f2264e639e45e80efad182641cc3e30437416af73e07",
+ "version": "v1.3",
+ "sha256": "c02f8a28831c5e2de3cc402bbffbbe1db5e94a1a90c2f42e9acd82a4dd898aaa",
  "max_source_share": 0.045
 }
