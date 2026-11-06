@@ -260,7 +260,8 @@ def member(c, ti, bi, snr, rng, tau600, wide, off=(), gain_shared=None, scint_sh
         gain = scint_shared.copy()
     if "scint" in off:
         gain = np.ones(NF)
-    if gain_shared is not None:
+    # bands that do not overlap leave nothing to transfer: the pair then stays a plain repeat
+    if gain_shared is not None and ((S * gain_shared[:, None])[mask] ** 2).sum() > 0:
         gain = gain * gain_shared
     if wide:  # stress only: smooth beam/bandpass multiplier
         x = (f - f[0]) / (f[-1] - f[0])
@@ -269,6 +270,7 @@ def member(c, ti, bi, snr, rng, tau600, wide, off=(), gain_shared=None, scint_sh
     S *= gain[:, None]
     S[~mask] = 0.0
     a = snr / np.sqrt((S ** 2).sum())
+    assert np.isfinite(a), f"empty template {ti} on background {bi}"
     out = a * S + c["bg_X"][bi]
     # re-normalise per channel exactly like preprocessing: off-pulse = outside the injected extent +- OFF_PAD
     prof = S.sum(0)
