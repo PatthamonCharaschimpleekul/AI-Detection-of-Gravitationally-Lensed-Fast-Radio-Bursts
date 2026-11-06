@@ -3,7 +3,8 @@
  "n": 4000,
  "seed": 101,
  "wide": false,
- "version": "v1.1",
+ "snr_floor": 10.0,
+ "version": "v1.2",
  "sha256": "d9b6f8f6721509922005f2264e639e45e80efad182641cc3e30437416af73e07",
  "max_source_share": 0.045
 }

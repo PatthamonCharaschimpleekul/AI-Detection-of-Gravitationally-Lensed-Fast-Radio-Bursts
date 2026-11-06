@@ -1,0 +1,13 @@
+split  sources(pool)  templates  backgrounds
+train     34        755         684
+val       26         89          89
+test      20        103          83
+  val: pairs 0..2999 reproduce the v1 hash
+frozen val: 4000 pairs from val, max source share 4.5%, sha256 d9b6f8f67215
+  test: pairs 0..2999 reproduce the v1 hash
+frozen test: 4000 pairs from test, max source share 5.6%, sha256 e9c120eaad9a
+  stress: pairs 0..2999 reproduce the v1 hash
+frozen stress: 4000 pairs from test, max source share 5.7%, sha256 1ac99f306ea3
+frozen val_bright: 8000 pairs from val, max source share 4.3%, sha256 4928eaa25b00
+frozen test_bright: 16000 pairs from test, max source share 5.3%, sha256 fe1acafbf835
+load_set('test') regenerates identical arrays

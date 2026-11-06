@@ -1,0 +1,10 @@
+{
+ "split": "val",
+ "n": 8000,
+ "seed": 201,
+ "wide": false,
+ "snr_floor": 25.0,
+ "version": "v1.2",
+ "sha256": "4928eaa25b004b09bf46a1ef23462b7958b08dac33fc5c755ecfcf16151880ab",
+ "max_source_share": 0.043
+}

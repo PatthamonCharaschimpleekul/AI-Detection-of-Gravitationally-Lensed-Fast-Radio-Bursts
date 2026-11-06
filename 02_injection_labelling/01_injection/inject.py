@@ -2,6 +2,7 @@
 
 Plan: plan/2026-11-05_1254_pair-injection.md
 Usage: python -I inject.py            # build cache if missing, write frozen manifests, audit, gallery
+       python -I inject.py --sets-only  # manifests only: skips the audit, which reads real same-source pairs
        python -I inject.py --rebuild  # rebuild the template/background cache from the raw files
 Library (training): from inject import load_pools, make_pair, load_set
 
@@ -27,13 +28,19 @@ SNR_MIN, R_MIN, OFF_MIN, DNU_DEFAULT, MODEL_SNR_MIN = 10.0, 0.05, 60, 49.0, 5.0
 KDM = 4.148808e6  # dispersion constant, ms MHz^2 / (pc cm^-3)
 BIG = ("FRB20220912A", "FRB20180916B")  # forced into train so they cannot dominate val/test
 KINDS = ("lensed", "repeat", "unrelated", "impostor")
-# name: (split, n_pairs, seed, wide nuisances)
-VERSION = "v1.1"  # v0 (496c048) catalog snr_fitb; v1 measured model S/N; v1.1 = v1 + 1000 impostor pairs appended
-SETS = {"val": ("val", 4000, 101, False), "test": ("test", 4000, 102, False), "stress": ("test", 4000, 103, True)}
+VERSION = "v1.2"  # v0 (496c048) catalog snr_fitb; v1 measured model S/N; v1.1 = v1 + 1000 impostor pairs; v1.2 adds bright sets
+BRIGHT = 25.0  # headline bin floor on pair min S/N (plan 2026-11-06_1223)
+# name: (split, n_pairs, seed, wide nuisances, S/N floor); bright sets cycle all four kinds
+SETS = {"val": ("val", 4000, 101, False, SNR_MIN), "test": ("test", 4000, 102, False, SNR_MIN),
+        "stress": ("test", 4000, 103, True, SNR_MIN),
+        "val_bright": ("val", 8000, 201, False, BRIGHT), "test_bright": ("test", 16000, 202, False, BRIGHT)}
 LEGACY = 3000  # pairs 0..2999 are exactly the v1 sets (kinds cycle lensed/repeat/unrelated); 3000.. are impostors
 V1_SHA = {"val": "54cc6d5710b04dbc700525826167a9d61497c8ea2af05b91f3b99fa36fe98847",
           "test": "c444efd58603f19578cd20ae437d3e285d8443913e2d2c90b459aff4bd67a53a",
           "stress": "337594c0850f757ee50475e6e5a3acf1c8b7b95f10c7d9f528ae3f90367cc76b"}
+V11_SHA = {"val": "d9b6f8f6721509922005f2264e639e45e80efad182641cc3e30437416af73e07",
+           "test": "e9c120eaad9aa097211b89210141b4da067167c2956082d52e57b5e5cb8a06d6",
+           "stress": "1ac99f306ea34de3dae3108f39095bd51f48cd45d2429a5b2aeff784b87167ab"}
 # I1 shared spectral envelope: a host plasma lens imposes one band shape on every burst while a caustic lasts
 # (hours-days; Cordes et al. 2017, ApJ 842, 35). Implemented as envelope transfer: member B keeps its own
 # time-frequency structure but takes member A's 25 MHz-smoothed spectral envelope, so each member's marginal
@@ -285,7 +292,7 @@ def envelope_transfer(Ta, Tb):
     return np.clip(ea / np.maximum(eb, 1e-3), 0.0, I1_RMAX)
 
 
-def make_pair(kind, rng, P, wide=False):
+def make_pair(kind, rng, P, wide=False, snr_floor=SNR_MIN):
     """Returns xa, xb (NF, WIN) float32, mask_a, mask_b, label (0 lensed, 1 repeat, 2 unrelated, 3 impostor), info.
     impostor = two different templates of one source sharing I1 (plasma-lens gain), I2 (scintillation) or both."""
     c = P.c
@@ -312,6 +319,9 @@ def make_pair(kind, rng, P, wide=False):
             ssh = rng.gamma(nsc, 1.0 / nsc, NF)
     snr_a = float(rng.choice(P.snr_pool))
     r = float(np.exp(rng.uniform(np.log(max(R_MIN, SNR_MIN / snr_a)), 0.0)))  # S/N_b >= SNR_MIN
+    while r * snr_a < snr_floor or snr_a < snr_floor:  # bright sets: redraw, so (S/N_a, r) stays the truncated joint
+        snr_a = float(rng.choice(P.snr_pool))
+        r = float(np.exp(rng.uniform(np.log(max(R_MIN, SNR_MIN / snr_a)), 0.0)))
     snr_b = r * snr_a
     ba, bb = rng.choice(P.bgs, 2, replace=False)
     while c["bg_file"][bb] == c["bg_file"][ba] or c["bg_file"][bb] in (ta, tb) or c["bg_file"][ba] in (ta, tb):
@@ -340,21 +350,21 @@ def kind_of(i, cycle4=False):
     return KINDS[i % 3] if i < LEGACY else "impostor"
 
 
-def gen_set(P, n, seed, wide, cycle4=False):
+def gen_set(P, n, seed, wide, cycle4=False, snr_floor=SNR_MIN):
     """Deterministic: pair i uses rng([seed, i]) and kind kind_of(i)."""
     for i in range(n):
-        yield (i,) + make_pair(kind_of(i, cycle4), np.random.default_rng([seed, i]), P, wide)
+        yield (i,) + make_pair(kind_of(i, cycle4), np.random.default_rng([seed, i]), P, wide, snr_floor)
 
 
 def load_set(name, pools=None):
     """Regenerate a frozen set and check it against its manifest hash. Returns arrays + labels."""
     pools = pools or load_pools()
-    split, n, seed, wide = SETS[name]
+    split, n, seed, wide, floor = SETS[name]
     exp = json.loads((MAN / f"{name}.json").read_text())
     assert exp.get("version") == VERSION, f"{name}: manifest is {exp.get('version', 'v0')}, code is {VERSION}"
     h = hashlib.sha256()
     XA, XB, MA, MB, Y = [], [], [], [], []
-    for i, xa, xb, ma, mb, y, _ in gen_set(pools[split], n, seed, wide):
+    for i, xa, xb, ma, mb, y, _ in gen_set(pools[split], n, seed, wide, floor > SNR_MIN, floor):
         h.update(xa.tobytes()); h.update(xb.tobytes())
         XA.append(xa); XB.append(xb); MA.append(ma); MB.append(mb); Y.append(y)
     assert h.hexdigest() == exp["sha256"], f"{name}: regenerated set differs from its manifest (code or inputs changed)"
@@ -414,30 +424,33 @@ def main():
     MAN.mkdir(exist_ok=True)
     OUT.mkdir(exist_ok=True)
     keep = {}
-    for name, (split, n, seed, wide) in SETS.items():
+    for name, (split, n, seed, wide, floor) in SETS.items():
         h = hashlib.sha256()
         rows = []
-        for i, xa, xb, ma, mb, y, info in gen_set(pools[split], n, seed, wide):
-            if i == LEGACY:
+        for i, xa, xb, ma, mb, y, info in gen_set(pools[split], n, seed, wide, floor > SNR_MIN, floor):
+            if i == LEGACY and name in V1_SHA:
                 assert h.hexdigest() == V1_SHA[name], f"{name}: pairs 0..{LEGACY - 1} no longer reproduce v1"
                 print(f"  {name}: pairs 0..{LEGACY - 1} reproduce the v1 hash")
             assert xa.shape == xb.shape == (NF, WIN) and np.isfinite(xa).all() and np.isfinite(xb).all()
             assert not xa[~ma].any() and not xb[~mb].any(), "masked channels must be zero"
-            assert info["snr_b"] >= SNR_MIN - 1e-9 and info["snr_a"] >= SNR_MIN
+            assert min(info["snr_a"], info["snr_b"]) >= floor - 1e-9
             h.update(xa.tobytes()); h.update(xb.tobytes())
             rows.append(dict(i=i, seed=f"{seed}:{i}", label=y, **info))
             if name == "test" and (i < 30 or LEGACY <= i < LEGACY + 10):
                 keep[i] = (xa, xb, ma, mb, info)
+        assert name not in V11_SHA or h.hexdigest() == V11_SHA[name], f"{name}: no longer reproduces v1.1"
         with open(MAN / f"{name}.csv", "w", newline="") as f:
             w = csv.DictWriter(f, fieldnames=list(rows[0]))
             w.writeheader()
             w.writerows(rows)
         srcshare = max(np.unique([r["src_a"] for r in rows], return_counts=True)[1]) / n
-        (MAN / f"{name}.json").write_text(json.dumps(dict(split=split, n=n, seed=seed, wide=wide, version=VERSION, sha256=h.hexdigest(),
+        (MAN / f"{name}.json").write_text(json.dumps(dict(split=split, n=n, seed=seed, wide=wide, snr_floor=floor, version=VERSION, sha256=h.hexdigest(),
                                                           max_source_share=round(float(srcshare), 3)), indent=1))
         print(f"frozen {name}: {n} pairs from {split}, max source share {srcshare:.1%}, sha256 {h.hexdigest()[:12]}")
     load_set("test", pools)  # regeneration reproduces the hash
     print("load_set('test') regenerates identical arrays")
+    if "--sets-only" in sys.argv:  # the audit below reads real same-source pairs: blinded until unblind-v1 (plan 2026-11-06_1223)
+        return
 
     # ---- leak audit on a separate train-split set (2000 pairs per class) ----
     P = pools["train"]

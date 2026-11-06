@@ -190,7 +190,7 @@ Two inputs pass through **the same encoder (shared weights)**, each is compresse
 - Shared-weight CNN encoder g(·) applied to burst A and burst B.
 - Combine the **intermediate feature maps**: |g(A) − g(B)|, g(A)·g(B), and optionally a cross-correlation layer between them.
 - A small classification head outputs P(lensed copy), P(intrinsic repeat), P(unrelated).
-- Extra scalar inputs: ΔDM, ΔRM, flux ratio, time separation.
+- Image-only input, no scalars: data are Stokes I (no RM), time separation is not simulated, and flux ratio is uninformative in Track B by design. Flux-ratio and timing consistency belong to Track C ([plan 2026-11-06_1223](plan/2026-11-06_1223_phase3-trackB-benchmark.md)).
 - Loss: cross-entropy (class-weighted for the rare `lensed copy` class), optionally plus a contrastive term on the embeddings.
 
 **Prior art and what is new.** The same fusion — a shared encoder with |f₁ − f₂| and element-wise product — was used for lensed gravitational-wave pairs by Zhang et al. 2026, and Goyal et al. 2021 screened lensed GW pairs with DenseNet/XGBoost. The novelty here is therefore **not** the fusion design but:
@@ -261,7 +261,7 @@ A non-detection only means something if we can show the pipeline would have foun
 4. **Controls.** Must flag or explain: the FRB 20190308C candidate (Chang et al. 2025). Must reject: real repeat pairs of the plasma-lensing candidate FRB 20201124A, and impostor pairs. (Multi-component bursts cannot form a cross-file pair, so they are not a Track B control.) Baselines and learned models must agree; disagreements are investigated before any conclusion.
 5. **Expected count before searching.** Compute N_exp for Catalog 2 first (Sec. 5.1), so the reader knows a null was expected.
 6. **Injection realism.** Too-clean injections inflate ε, so injections span several distortion levels and results are reported as a range.
-7. **Blind analysis protocol.** Pipeline, thresholds and priors are fixed using simulations, off-pulse data and blind injections only. That version is tagged in git (e.g. `unblind-v1`) and only then run on the real Catalog 2 repeaters. Any change after unblinding is reported separately with its reason.
+7. **Blind analysis protocol.** Pipeline, thresholds and priors are fixed using simulations, off-pulse data and blind injections only. That version is tagged in git (e.g. `unblind-v1`) and only then run on the real Catalog 2 repeaters. Any change after unblinding is reported separately with its reason. Before the tag, real data enter only as cross-source pairs (true negatives by construction) and as blind same-source histograms with the top 1% hidden. Earlier uses of real same-source pair statistics during template validation are disclosed in the paper (list in [plan 2026-11-06_1223](plan/2026-11-06_1223_phase3-trackB-benchmark.md)).
 8. **Reproducibility.** Data versions are recorded (Catalog 2 DOI 10.11570/25.0066), random seeds are fixed and logged, and code plus derived data products are released with a Zenodo DOI at submission.
 
 | Injections recovered? | Real detection? | Meaning |

@@ -16,7 +16,7 @@ Update this table whenever an [update/](update/) file is written. ⬜ not starte
 | [literature_review](literature_review/) | Background and prior work | ✅ first pass | [2026-11-03](update/2026-11-03_1125_literature-and-data-check.md) |
 | [01_semi_synthetic_data](01_semi_synthetic_data/) | Phase 1 · Semi-synthetic lensed repeaters | 🟡 Catalog 2 repeaters preprocessed: 981 × 256/1024 × 160 HDF5 + 20-chunk noise bank; lens population, propagation, impostors next | [2026-11-05](update/2026-11-05_1051_catalog2-preprocessing.md) |
 | [02_injection_labelling](02_injection_labelling/) | Phase 2 · Injection & labelling | ✅ Track B sets v1.1: v1 (lensed/repeat/unrelated, template question closed) + impostor class (shared envelope / scintillation); probes pass, one small single-member S/N shift (AUC 0.50) documented. Thresholds from real negatives only | [2026-11-05](update/2026-11-05_1928_impostor-pairs.md) |
-| [03_models_benchmark](03_models_benchmark/) | Phase 3–4 · Models & benchmark (Tracks B, C) | ⬜ ready to start: headline bin S/N ≥ 25 and real-negative transfer eval pre-specified | — |
+| [03_models_benchmark](03_models_benchmark/) | Phase 3–4 · Models & benchmark (Tracks B, C) | 🟡 Track B Stage 0 done (GPU ready, bright sets v1.2, rules fixed); baselines next | [2026-11-06](update/2026-11-06_1336_phase3-stage0.md) |
 | [04_validation](04_validation/) | Validation | ⬜ | — |
 | [05_search](05_search/) | Search: Catalog 2 repeaters | ⬜ | — |
 | [06_cosmology](06_cosmology/) | Forecasts (H₀ discussion only) | ⬜ | — |
