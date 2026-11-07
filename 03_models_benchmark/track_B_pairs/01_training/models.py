@@ -96,7 +96,7 @@ class CrossAttention(nn.Module):
         d = 4 * c
         self.enc, self.att = Encoder(1, c), nn.MultiheadAttention(d, 4, batch_first=True)
         self.fpos = nn.Parameter(torch.zeros(1, d, 8, 1))  # frequency position only: time must stay shift-free
-        self.head = mlp(4 * d)
+        self.head = nn.Sequential(nn.LayerNorm(4 * d), mlp(4 * d))  # head input was near-constant across pairs (update 2026-11-06_2015)
 
     def tokens(self, x):
         return (F.avg_pool2d(self.enc(prep(x)), 2) + self.fpos).flatten(2).transpose(1, 2)

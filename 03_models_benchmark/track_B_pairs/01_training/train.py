@@ -19,7 +19,7 @@ from inject import BRIGHT, KINDS, SNR_MIN, load_pools, load_set, make_pair
 from metrics import recall_at_fpr
 from models import MODELS, lensed_score
 
-BATCH, LR = 64, 1e-3
+BATCH, LR, WARMUP = 64, 1e-3, 1000  # warmup: without it the head ReLUs died in 4 of 12 runs (update 2026-11-06_2015)
 
 
 class Pairs(IterableDataset):
@@ -69,7 +69,8 @@ def main():
     dev = "cuda"
     model = MODELS[a.model]().to(dev)
     opt = torch.optim.AdamW(model.parameters(), LR, weight_decay=1e-4)
-    sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, a.steps)
+    S = torch.optim.lr_scheduler
+    sched = S.SequentialLR(opt, [S.LinearLR(opt, 1e-3, 1.0, WARMUP), S.CosineAnnealingLR(opt, a.steps - WARMUP)], [WARMUP])
     loader = DataLoader(Pairs(1000 + 10 * a.model + a.seed), batch_size=None, num_workers=0 if a.overfit else a.workers,
                         persistent_workers=not a.overfit, prefetch_factor=None if a.overfit else 4, pin_memory=True)
     it = iter(loader)
