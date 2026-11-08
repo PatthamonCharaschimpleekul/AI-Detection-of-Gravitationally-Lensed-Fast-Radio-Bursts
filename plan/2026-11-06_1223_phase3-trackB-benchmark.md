@@ -120,3 +120,6 @@
 **Disclosure list for the paper: every use of real same-source pairs before `unblind-v1`.** Only medians, rank statistics and bootstrap summaries were read; no pair was inspected as a candidate.
 - `inject.py` audit: (d) real repeat pairs, the twin ladder, the same/different contrast, and (e) the FRB 20201124A control (update 1928).
 - `checks/`: `resp_proto.py`, `excess.py`, `unrel.py`, `v2_prereq.py`, `v2_gtwin.py`, `snr_bins.py`.
+
+## Addendum 2026-11-08: grouped folds
+Trigger met (update 0640). The fold design is in [plan 0845](2026-11-08_0845_grouped-fold-addendum.md), status proposed.
