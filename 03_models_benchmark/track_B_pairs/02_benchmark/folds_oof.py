@@ -7,6 +7,7 @@ from pathlib import Path
 
 import numpy as np
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # -I drops the script folder from the path
 from metrics import FPR, boot_recall, recall_at_fpr
 
 HERE = Path(__file__).resolve().parent
@@ -35,7 +36,7 @@ def per_fold_threshold_recall(v, pos, fold):
 
 # self-check: identical score scales -> both thresholds agree; one fold shifted up -> pooled loses recall, per-fold does not
 r = np.random.default_rng(0)
-_p, _f = np.arange(20000) % 2 == 0, np.arange(20000) % 4
+_p, _f = np.arange(20000) % 2 == 0, np.arange(20000) // 2 % 4
 _v = np.where(_p, 2.5, 0.0) + r.normal(size=20000)
 assert abs(per_fold_threshold_recall(_v, _p, _f) - recall_at_fpr(_v[_p], _v[~_p])) < 0.02
 _w = _v + 3.0 * (_f == 0)

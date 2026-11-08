@@ -4,7 +4,7 @@
 - **Pipeline box:** `03_models_benchmark/track_B_pairs` (`01_training`, `02_benchmark`); fold sets in `02_injection_labelling/01_injection`
 - **Amends:** [plan 1223](2026-11-06_1223_phase3-trackB-benchmark.md), section "Grouped folds: decided by numbers, on val only"
 - **Trigger record:** [update 0640](../update/2026-11-08_0640_phase3-stage2-rerun.md). Half-width 0.158 > 0.10, and 5 model-6 runs take 5.2 GPU-h ≤ 24, so the trigger is met.
-- **Status:** agreed 2026-11-08 (user: "Approve, start"). Rehearsal (F9) in progress.
+- **Status:** agreed 2026-11-08 (user: "Approve, start"). Rehearsal (F9) done: [update 1450](../update/2026-11-08_1450_grouped-fold-rehearsal.md).
 
 ## What changes
 - **Primary metric:** recall at 1% FPR on out-of-fold (OOF) scores from 5 source-grouped folds over all 80 pool sources. This replaces recall on `test_bright`.
