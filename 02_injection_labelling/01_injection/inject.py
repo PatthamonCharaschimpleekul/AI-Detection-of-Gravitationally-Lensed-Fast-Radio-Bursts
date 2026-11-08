@@ -35,6 +35,9 @@ BRIGHT = 25.0  # headline bin floor on pair min S/N (plan 2026-11-06_1223)
 SETS = {"val": ("val", 4000, 101, False, SNR_MIN), "test": ("test", 4000, 102, False, SNR_MIN),
         "stress": ("test", 4000, 103, True, SNR_MIN),
         "val_bright": ("val", 8000, 201, False, BRIGHT), "test_bright": ("test", 16000, 202, False, BRIGHT)}
+FOLD_SEED, N_FOLDS = 2027, 5  # grouped folds, plan 2026-11-08_0845 (F1)
+FOLD_SETS = {"dev": 411, "all": 401}  # fold-set seed = base + k; 8000 pairs each, floor BRIGHT, four kinds cycled (F3, F9)
+FOLD_N = 8000
 LEGACY = 3000  # pairs 0..2999 cycle lensed/repeat/unrelated; 3000.. are impostors
 # I1 shared spectral envelope: a host plasma lens imposes one band shape on every burst while a caustic lasts
 # (hours-days; Cordes et al. 2017, ApJ 842, 35). Implemented as envelope transfer: member B keeps its own
@@ -168,18 +171,18 @@ def build_cache():
 
 
 class Pools:
-    """Everything make_pair needs for one split."""
+    """Everything make_pair needs for one split, or for an explicit set of source names (grouped folds)."""
 
     def __init__(self, c, split):
         self.c, self.split = c, split
-        fs = c["file_split"]
+        inn = c["file_split"] == split if isinstance(split, str) else np.isin(c["source"], sorted(split))
         self.tmpl = {}
-        for s in np.unique(c["source"][(fs == split) & c["eligible"]]):
+        for s in np.unique(c["source"][inn & c["eligible"]]):
             t = np.flatnonzero((c["source"] == s) & c["eligible"])
             if len(t) >= 2:  # decision 5: one pool for every class
                 self.tmpl[s] = t
         self.sources = np.array(sorted(self.tmpl))
-        self.bgs = np.flatnonzero((fs[c["bg_file"]] == split) & c["bg_ok"])  # rows of bg/X
+        self.bgs = np.flatnonzero(inn[c["bg_file"]] & c["bg_ok"])  # rows of bg/X
         # v1: matched-filter S/N of the model in the real data (catalog snr_fitb is ~3.7% lower,
         # which made v0 members systematically fainter than the bursts they stand for)
         snr = c["model_snr"][np.isfinite(c["model_snr"])]
@@ -217,6 +220,75 @@ def load_pools():
     # two files have almost no valid off-pulse data, so their "noise" is zeros
     c["bg_ok"] = np.array([np.median(x[c["fm"][f] >= 0.25].std(1)) > 0.5 for x, f in zip(c["bg_X"], c["bg_file"])])
     return {s: Pools(c, s) for s in ("train", "val", "test")}
+
+
+def assign_folds(sources, seed=FOLD_SEED, k=N_FOLDS):
+    """F1: BIG in folds 0 and 1, the other sources permuted and dealt round-robin starting at fold 2."""
+    out = {b: i for i, b in enumerate(BIG) if b in sources}
+    rest = sorted(s for s in sources if s not in BIG)
+    for j, s in enumerate(np.random.default_rng(seed).permutation(rest)):
+        out[str(s)] = (len(BIG) + j) % k
+    return out
+
+
+def fold_sources(pools, scheme):
+    """Pool sources a fold scheme covers: 'dev' = train + val only (rehearsal, F9), 'all' = every pool source."""
+    return [str(s) for sp in (("train", "val") if scheme == "dev" else ("train", "val", "test")) for s in pools[sp].sources]
+
+
+def fold_pools(pools, scheme, k):
+    """(training pool, held-out pool) for fold k: templates and backgrounds never cross the fold boundary (F2)."""
+    f = assign_folds(fold_sources(pools, scheme))
+    c = pools["train"].c
+    return Pools(c, {s for s, j in f.items() if j != k}), Pools(c, {s for s, j in f.items() if j == k})
+
+
+def fold_set(pools, scheme, k):
+    _, H = fold_pools(pools, scheme, k)
+    return gen_set(H, FOLD_N, FOLD_SETS[scheme] + k, False, True, BRIGHT)
+
+
+def load_fold_set(scheme, k, pools=None):
+    """Regenerate fold set k and check it against folds_v1.json. Returns arrays, labels and source of each pair."""
+    pools = pools or load_pools()
+    man = json.loads((MAN / "folds_v1.json").read_text())
+    assert man["assign"][scheme] == assign_folds(fold_sources(pools, scheme)), "fold assignment changed"
+    h, XA, XB, Y, S = hashlib.sha256(), [], [], [], []
+    for i, xa, xb, ma, mb, y, info in fold_set(pools, scheme, k):
+        h.update(xa.tobytes()); h.update(xb.tobytes())
+        XA.append(xa); XB.append(xb); Y.append(y); S.append(info["src_a"])
+    assert h.hexdigest() == man["sha256"][f"{scheme}_f{k}"], f"{scheme} fold {k}: regenerated set differs from folds_v1.json"
+    return np.stack(XA), np.stack(XB), np.array(Y), np.array(S)
+
+
+def freeze_folds(pools):
+    """Write folds_v1.json (assignments + set hashes) and one manifest csv per fold set. Builds pairs, scores nothing (F8)."""
+    man = dict(seed=FOLD_SEED, n_folds=N_FOLDS, n_pairs=FOLD_N, set_seeds=FOLD_SETS, version=VERSION, assign={}, sha256={}, counts={})
+    c = pools["train"].c
+    for scheme in FOLD_SETS:
+        f = assign_folds(fold_sources(pools, scheme))
+        man["assign"][scheme] = f
+        for k in range(N_FOLDS):
+            T, H = fold_pools(pools, scheme, k)
+            assert not set(T.sources) & set(H.sources) and len(T.sources) + len(H.sources) == len(f)
+            assert not set(c["source"][c["bg_file"][T.bgs]]) & set(H.sources)  # no background crosses the boundary
+            assert not set(c["source"][c["bg_file"][H.bgs]]) & set(T.sources)
+            h, rows = hashlib.sha256(), []
+            for i, xa, xb, ma, mb, y, info in fold_set(pools, scheme, k):
+                assert info["src_a"] in H.tmpl and info["src_b"] in H.tmpl and min(info["snr_a"], info["snr_b"]) >= BRIGHT - 1e-9
+                h.update(xa.tobytes()); h.update(xb.tobytes())
+                rows.append(dict(i=i, label=y, **info))
+            name = f"{scheme}_f{k}"
+            man["sha256"][name] = h.hexdigest()
+            man["counts"][name] = dict(held_sources=len(H.sources), held_templates=int(sum(map(len, H.tmpl.values()))),
+                                       train_sources=len(T.sources), train_templates=int(sum(map(len, T.tmpl.values()))),
+                                       held_bgs=len(H.bgs), train_bgs=len(T.bgs))
+            with open(MAN / f"{name}_bright.csv", "w", newline="") as fh:
+                w = csv.DictWriter(fh, fieldnames=list(rows[0]))
+                w.writeheader()
+                w.writerows(rows)
+            print(name, man["counts"][name], h.hexdigest()[:12], flush=True)
+    (MAN / "folds_v1.json").write_text(json.dumps(man, indent=1))
 
 
 def fshift(a, d):
@@ -411,6 +483,14 @@ def main():
 
     pools = load_pools()
     c = pools["train"].c
+    if "--folds" in sys.argv:  # plan 2026-11-08_0845
+        f = assign_folds(fold_sources(pools, "all"))
+        assert sorted(np.bincount(list(f.values()))) == [16] * 5 and [f[b] for b in BIG] == [0, 1]
+        assert sorted(np.bincount(list(assign_folds(fold_sources(pools, "dev")).values()))) == [12] * 5
+        freeze_folds(pools)
+        load_fold_set("dev", 4, pools)  # regeneration reproduces the hash
+        print("load_fold_set('dev', 4) regenerates identical arrays")
+        return
     print("split  sources(pool)  templates  backgrounds")
     for s, P in pools.items():
         print(f"{s:6s} {len(P.sources):5d} {sum(len(v) for v in P.tmpl.values()):10d} {len(P.bgs):11d}")

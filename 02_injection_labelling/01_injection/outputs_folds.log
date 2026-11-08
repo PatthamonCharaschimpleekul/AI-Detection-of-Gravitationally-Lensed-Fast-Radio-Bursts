@@ -1,0 +1,12 @@
+dev_f0 {'held_sources': 12, 'held_templates': 441, 'train_sources': 48, 'train_templates': 403, 'held_bgs': 411, 'train_bgs': 357} c1ce2d14555e
+dev_f1 {'held_sources': 12, 'held_templates': 188, 'train_sources': 48, 'train_templates': 656, 'held_bgs': 177, 'train_bgs': 591} b48f6815049c
+dev_f2 {'held_sources': 12, 'held_templates': 69, 'train_sources': 48, 'train_templates': 775, 'held_bgs': 39, 'train_bgs': 729} 76421bab1644
+dev_f3 {'held_sources': 12, 'held_templates': 71, 'train_sources': 48, 'train_templates': 773, 'held_bgs': 66, 'train_bgs': 702} 95509f89d725
+dev_f4 {'held_sources': 12, 'held_templates': 75, 'train_sources': 48, 'train_templates': 769, 'held_bgs': 75, 'train_bgs': 693} 9af93a7c85b6
+all_f0 {'held_sources': 16, 'held_templates': 439, 'train_sources': 64, 'train_templates': 508, 'held_bgs': 396, 'train_bgs': 455} cc45401655a9
+all_f1 {'held_sources': 16, 'held_templates': 196, 'train_sources': 64, 'train_templates': 751, 'held_bgs': 179, 'train_bgs': 672} 88eb2b9ab138
+all_f2 {'held_sources': 16, 'held_templates': 118, 'train_sources': 64, 'train_templates': 829, 'held_bgs': 114, 'train_bgs': 737} e64af9e1c090
+all_f3 {'held_sources': 16, 'held_templates': 78, 'train_sources': 64, 'train_templates': 869, 'held_bgs': 75, 'train_bgs': 776} 092168dd86e8
+all_f4 {'held_sources': 16, 'held_templates': 116, 'train_sources': 64, 'train_templates': 831, 'held_bgs': 87, 'train_bgs': 764} 4b25a57a5497
+load_fold_set('dev', 4) regenerates identical arrays
+old val hashes unchanged

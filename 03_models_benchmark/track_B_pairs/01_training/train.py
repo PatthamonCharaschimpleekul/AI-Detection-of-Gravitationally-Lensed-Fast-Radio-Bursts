@@ -4,7 +4,8 @@ Usage (venv python, from this folder):
   python -I train.py --model 6 --seed 0 --steps N    # one run -> outputs/m6_s0/
   python -I train.py --model 6 --overfit             # self-check: memorise one batch
   python -I train.py --model 6 --shuffle --steps N   # self-check: shuffled labels must give AUC ~ 0.5
-Test sets are never read here.
+  python -I train.py --model 6 --fold K --scheme dev --steps 20000   # grouped fold K (plan 2026-11-08_0845) -> outputs/folds_dev/m6_f{K}/
+Test sets are never read here. Scheme 'all' trains on test-split sources, so it refuses to run before the benchmark-v1 tag (F8).
 """
 import argparse, csv, sys, time
 from pathlib import Path
@@ -15,21 +16,22 @@ from torch.utils.data import DataLoader, IterableDataset, get_worker_info
 
 HERE = Path(__file__).resolve().parent
 sys.path[:0] = [str(HERE), str(HERE.parent / "02_benchmark"), str(HERE.parents[2] / "02_injection_labelling" / "01_injection")]
-from inject import BRIGHT, KINDS, SNR_MIN, load_pools, load_set, make_pair
+from inject import BRIGHT, KINDS, SNR_MIN, fold_pools, load_fold_set, load_pools, load_set, make_pair
 from metrics import recall_at_fpr
 from models import MODELS, lensed_score
 
 BATCH, LR, WARMUP = 64, 1e-3, 1000  # warmup: without it the head ReLUs died in 4 of 12 runs (update 2026-11-06_2015)
+COLLAPSED = np.log(4) - 0.01  # F6: mean loss over the last 1000 steps at or above this = collapsed run
 
 
 class Pairs(IterableDataset):
     """Endless batches from the train split; S/N floor mixed half and half, as for the GBM."""
 
-    def __init__(self, seed):
-        self.seed = seed
+    def __init__(self, seed, fold=None):
+        self.seed, self.fold = seed, fold  # fold = (scheme, k): train on the other folds' sources
 
     def __iter__(self):
-        P = load_pools()["train"]
+        P = load_pools()["train"] if self.fold is None else fold_pools(load_pools(), *self.fold)[0]
         w = get_worker_info()
         rng = np.random.default_rng([self.seed, w.id if w else 0])
         while True:
@@ -64,15 +66,14 @@ def main():
     ap.add_argument("--overfit", action="store_true")
     ap.add_argument("--shuffle", action="store_true")
     ap.add_argument("--tag", default="")
+    ap.add_argument("--fold", type=int)
+    ap.add_argument("--scheme", choices=("dev", "all"), default="dev")
     a = ap.parse_args()
+    if a.fold is not None:
+        return train_fold(a)
     torch.manual_seed(a.seed)
     dev = "cuda"
-    model = MODELS[a.model]().to(dev)
-    opt = torch.optim.AdamW(model.parameters(), LR, weight_decay=1e-4)
-    S = torch.optim.lr_scheduler
-    sched = S.SequentialLR(opt, [S.LinearLR(opt, 1e-3, 1.0, WARMUP), S.CosineAnnealingLR(opt, a.steps - WARMUP)], [WARMUP])
-    loader = DataLoader(Pairs(1000 + 10 * a.model + a.seed), batch_size=None, num_workers=0 if a.overfit else a.workers,
-                        persistent_workers=not a.overfit, prefetch_factor=None if a.overfit else 4, pin_memory=True)
+    model, opt, sched, loader = setup(a.model, a.steps, 1000 + 10 * a.model + a.seed, None, 0 if a.overfit else a.workers)
     it = iter(loader)
 
     if a.overfit:
@@ -122,6 +123,61 @@ def main():
                 np.save(out / "val_bright_scores.npy", v)
     print(f"best val recall {best:.3f}")
     # workers hold endless iterators: leave without waiting on them
+    del it, loader
+
+
+def setup(model_id, steps, stream, fold=None, workers=14):
+    model = MODELS[model_id]().to("cuda")
+    opt = torch.optim.AdamW(model.parameters(), LR, weight_decay=1e-4)
+    S = torch.optim.lr_scheduler
+    sched = S.SequentialLR(opt, [S.LinearLR(opt, 1e-3, 1.0, WARMUP), S.CosineAnnealingLR(opt, steps - WARMUP)], [WARMUP])
+    loader = DataLoader(Pairs(stream, fold), batch_size=None, num_workers=workers, persistent_workers=workers > 0,
+                        prefetch_factor=4 if workers else None, pin_memory=True)
+    return model, opt, sched, loader
+
+
+def train_fold(a):
+    """F4-F6: Stage 2 settings, one seed per fold, final checkpoint (no selection), held-out fold set scored once."""
+    if a.scheme == "all":
+        import subprocess
+        tag = subprocess.run(["git", "tag", "-l", "benchmark-v1"], capture_output=True, text=True, cwd=HERE).stdout.strip()
+        assert tag == "benchmark-v1", "scheme 'all' opens the test sources: only after the benchmark-v1 tag (plan 2026-11-08_0845 F8)"
+    A, Bx, Y, src = load_fold_set(a.scheme, a.fold)  # before the workers start: 2 x 1.2 GB float32 at the end ran out of RAM
+    A, Bx = torch.from_numpy(A).half(), torch.from_numpy(Bx).half()
+    stream = 2000 + 10 * a.model + a.fold
+    torch.manual_seed(stream)
+    dev = "cuda"
+    model, opt, sched, loader = setup(a.model, a.steps, stream, (a.scheme, a.fold), a.workers)
+    it = iter(loader)
+    out = HERE / "outputs" / f"folds_{a.scheme}" / (f"m{a.model}_f{a.fold}" + a.tag)
+    out.mkdir(parents=True, exist_ok=True)
+    fh = open(out / "log.csv", "w", newline="")
+    log = csv.writer(fh)
+    log.writerow(["step", "loss", "seconds"])
+    t0, run, tail = time.time(), [], []
+    for step in range(1, a.steps + 1):
+        xa, xb, y = (t.to(dev, non_blocking=True) for t in next(it))
+        with torch.autocast("cuda", dtype=torch.bfloat16):
+            loss = torch.nn.functional.cross_entropy(model(xa, xb).float(), y)
+        opt.zero_grad(set_to_none=True)
+        loss.backward()
+        torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+        opt.step(); sched.step()
+        run.append(loss.item())
+        if step > a.steps - 1000:
+            tail.append(run[-1])
+        if step % a.eval_every == 0 or step == a.steps:
+            el = time.time() - t0
+            log.writerow([step, np.mean(run), round(el)]); fh.flush()
+            print(f"step {step} loss {np.mean(run):.4f}  {el:.0f}s  {step * BATCH / el:.0f} pairs/s", flush=True)
+            run = []
+    torch.save(model.state_dict(), out / "final.pt")
+    collapsed = bool(np.mean(tail) >= COLLAPSED)
+    v = scores(model, A, Bx, dev)
+    assert np.isfinite(v).all(), "non-finite scores"
+    np.savez(out / "fold_scores.npz", score=v, y=Y, src=src, collapsed=collapsed, tail_loss=np.mean(tail), seconds=time.time() - t0)
+    k = Y != 2
+    print(f"fold {a.fold}: tail loss {np.mean(tail):.4f} collapsed {collapsed}; held-out recall {recall_at_fpr(v[k][Y[k] == 0], v[k][Y[k] != 0]):.3f}")
     del it, loader
 
 

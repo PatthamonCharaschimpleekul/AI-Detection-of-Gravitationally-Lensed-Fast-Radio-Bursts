@@ -2,6 +2,8 @@
 
 Plan: plan/2026-11-06_1223_phase3-trackB-benchmark.md
 Usage: python -I baselines.py        (venv python; writes outputs/stage1_val.txt and outputs/scores_<set>.npz)
+       python -I baselines.py --fold K --scheme dev   (grouped fold K, plan 2026-11-08_0845: GBM refitted on the other
+                                                       folds, held-out fold set scored -> outputs/folds_dev/gbm_f{K}.npz)
 
 Everything here reads pixels only: no ext_lo/hi, no fitburst parameters, so the same functions run on
 real pairs. Test sets are refused until Stage 5.
@@ -14,7 +16,8 @@ import numpy as np
 
 HERE = Path(__file__).resolve().parent
 sys.path[:0] = [str(HERE), str(HERE.parents[2] / "02_injection_labelling" / "01_injection")]
-from inject import DT_MS, KDM, KINDS, MAN, NF, SETS, SNR_MIN, WIN, kind_of, load_pools, make_pair, xcorr, xcorr_smooth
+from inject import (BRIGHT, DT_MS, FOLD_N, FOLD_SETS, KDM, KINDS, MAN, NF, SETS, SNR_MIN, WIN, fold_pools, kind_of, load_pools,
+                    make_pair, xcorr, xcorr_smooth)
 from metrics import FPR, boot_recall, recall_at_fpr
 
 OUT = HERE / "outputs"
@@ -115,9 +118,11 @@ def score_pair(xa, ma, xb, mb, freq):
     return s, np.concatenate([np.abs(fa - fb), (fa + fb) / 2])
 
 
-def init():
+def init(fold=None):
     global POOLS
     POOLS = load_pools()
+    if fold is not None:  # (scheme, k): "tr" = the other folds' sources, "ho" = fold k
+        POOLS["tr"], POOLS["ho"] = fold_pools(POOLS, *fold)
 
 
 def work(job):
@@ -146,7 +151,33 @@ def frozen(pool, name):
     return d
 
 
+def gbm_jobs(split, base):
+    """GBM training pairs: N_TRAIN at the S/N floor 10, then N_TRAIN at 25; seed list [base + floor index, i]."""
+    return [(split, KINDS[i % 4], [base + (i >= N_TRAIN), i], False, 25.0 if i >= N_TRAIN else SNR_MIN) for i in range(2 * N_TRAIN)]
+
+
+def run_fold(scheme, k):
+    """F5: GBM refitted per fold (same recipe), baselines 1-2 with frozen grids, held-out fold set scored once."""
+    from sklearn.ensemble import HistGradientBoostingClassifier
+    assert scheme == "dev", "scheme 'all' opens the test sources: run at Stage 5 only (plan 2026-11-08_0845 F8)"
+    with Pool(16, initializer=init, initargs=((scheme, k),)) as pool:
+        tr = run(pool, gbm_jobs("tr", 500 + 2 * k))
+        d = run(pool, [("ho", kind_of(i, True), [FOLD_SETS[scheme] + k, i], False, BRIGHT) for i in range(FOLD_N)])
+    man = list(csv.DictReader(open(MAN / f"{scheme}_f{k}_bright.csv")))  # these jobs must be the frozen fold set
+    assert [r["tmpl_a"] for r in man] == d["tmpl"].tolist() and np.allclose([float(r["snr_a"]) for r in man], d["snr_a"])
+    gbm = HistGradientBoostingClassifier(random_state=0).fit(tr["f"], tr["y"] == 0)
+    sc = {m: d["s"][:, i] for i, m in enumerate(METHODS)} | {"b3_gbm": gbm.predict_proba(d["f"])[:, 1]}
+    (OUT / f"folds_{scheme}").mkdir(parents=True, exist_ok=True)
+    np.savez(OUT / f"folds_{scheme}" / f"gbm_f{k}.npz", y=d["y"], src=d["src"], snr=d["snr"], imp=d["imp"], **sc)
+    t = d["y"] != 2
+    v, pos = sc["b3_gbm"][t], d["y"][t] == 0
+    print(f"fold {k}: b3_gbm held-out recall {recall_at_fpr(v[pos], v[~pos]):.3f}")
+
+
 def main():
+    if "--fold" in sys.argv:
+        a = sys.argv
+        return run_fold(a[a.index("--scheme") + 1] if "--scheme" in a else "dev", int(a[a.index("--fold") + 1]))
     from sklearn.ensemble import HistGradientBoostingClassifier
     from sklearn.metrics import roc_auc_score
     OUT.mkdir(exist_ok=True)
@@ -162,8 +193,7 @@ def main():
     assert abs(same[0] - 1) < 1e-6 and not same_f[:7].any()
 
     with Pool(16, initializer=init) as pool:
-        tr = run(pool, [("train", KINDS[i % 4], [300 + (i >= N_TRAIN), i], False, 25.0 if i >= N_TRAIN else SNR_MIN)
-                        for i in range(2 * N_TRAIN)])
+        tr = run(pool, gbm_jobs("train", 300))
         data = {n: frozen(pool, n) for n in ("val", "val_bright")}
     gbm = HistGradientBoostingClassifier(random_state=0).fit(tr["f"], tr["y"] == 0)
     names = METHODS + ["b3_gbm"]
