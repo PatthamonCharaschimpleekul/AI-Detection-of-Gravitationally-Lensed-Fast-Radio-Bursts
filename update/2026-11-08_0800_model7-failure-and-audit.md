@@ -47,5 +47,11 @@ Re-ran the first 2500 steps of `m7_s1` and `m7_s2` with the same seeds and code,
 - **Evaluation and metric:** checks passed for both member orders averaged, unrelated excluded from the primary, lensed log-odds formula, correlation-layer lag sign, threshold at the 99th percentile of negatives with strict >, and all 2000 source resamples used.
 - **Known limitation (already disclosed):** checkpoints are chosen on `val_bright`, so val recalls are slightly optimistic.
 
+## Decision (2026-11-08): model 7 reported as seed-unstable
+- No architecture change, no rerun. All three seeds stay in the record as they are (0.471, 0.013, 0.579).
+- The paper reports model 7 as unstable across seeds: 1 of 3 collapsed on the chance plateau, with the diagnosis above.
+- Model 7 is not used as a comparator and gets no paired-difference claim. The primary comparison stays model 6 vs `b3_gbm`.
+- The same rule carries into the grouped folds: model 7 runs with its frozen code, and every collapsed fold-seed is counted and reported, not replaced.
+
 ## Next
-- Decide on model 7 (one of the fixes above, or report as seed-unstable) and on the σ question. Then the grouped-fold addendum.
+- The σ question (decide at the `04_propagation` sign-off). Then the grouped-fold addendum.
