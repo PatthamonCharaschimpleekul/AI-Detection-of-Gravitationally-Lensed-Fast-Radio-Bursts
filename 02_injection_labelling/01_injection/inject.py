@@ -291,6 +291,21 @@ def freeze_folds(pools):
     (MAN / "folds_v1.json").write_text(json.dumps(man, indent=1))
 
 
+def fill_window(x, tm, lo, hi, min_off=10):
+    """Real window whose missing columns (time_mask 0, zeros) are filled with the file's own off-pulse columns,
+    mirror-tiled exactly like the backgrounds, so real inputs match simulated members (update 2026-11-09_1520).
+    Returns (window, filled?). Windows with fewer than min_off off-pulse columns are returned unchanged."""
+    cols = np.arange(WIN)
+    miss = tm <= 0
+    off = cols[~miss & ((cols < lo - OFF_PAD) | (cols > hi + OFF_PAD))]
+    if not miss.any() or len(off) < min_off:
+        return x, False
+    seq = np.tile(np.concatenate([off, off[::-1]]), WIN // len(off) + 1)
+    y = x.copy()
+    y[:, miss] = x[:, seq[:miss.sum()]]
+    return y, True
+
+
 def fshift(a, d):
     """Shift each row of a (nf, WIN) right by d samples (scalar or per-row), zero-padded, no wrap."""
     n = 2 * WIN

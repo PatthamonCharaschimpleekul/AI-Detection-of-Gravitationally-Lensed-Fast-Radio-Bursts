@@ -51,3 +51,24 @@
 
 ## Next
 - A decision on the options above. Then rerun Stage 3, still on val only.
+
+## Addendum 2026-11-09 16:10: option 1 applied, Stage 3 rerun — all methods pass
+- **Decision:** the user chose option 1 ("Fill and rerun").
+- **Code:**
+  - `inject.fill_window` fills a real window's missing columns with the file's own off-pulse columns, mirror-tiled exactly like the backgrounds. Its self-check passes.
+  - `stage3_transfer.py` applies it to every real window.
+  - 27 of 90 val windows have missing columns. 26 were filled; one has fewer than 10 off-pulse columns and stays unchanged.
+  - Simulated data, frozen sets, training and Stage 2 are untouched.
+- **The earlier output is kept** as `outputs/stage3_val_nofill.txt`.
+- **Result:** all 15 methods pass in both bins, 30 of 30 verdicts.
+
+| Headline bin, real FPR | before fill | after fill | Spearman real~twin / ceiling, after |
+|---|---|---|---|
+| model 6 s0 / s1 / s2 | 0.015 / **0.022** / 0.013 | 0.011 / 0.014 / 0.008 | 0.92 / 0.89, 0.94 / 0.91, 0.91 / 0.88 |
+| b3_gbm | 0.009 | 0.009 | 0.88 / 0.83 |
+| models 4, 5, 7 (9 runs) | 0.005–0.015 | 0.003–0.015 | 0.83–0.95 |
+
+- **Pairs with one short-window member (n = 120):** model 6's FPR fell from 4.2–7.5% to 0.8–2.5%. That is now the same level as the GBM (1.7%).
+- **The fill does not over-correct:** model 6's real~twin Spearman now sits at or slightly above the sim–sim ceiling.
+- **Rule from now on:** every real window that any method scores goes through `fill_window` first. That covers the Stage 5 test-split transfer check and the Phase 5 search. Without it, short-window files raise model 6's scores on real pairs.
+- **Disclosure:** the fill was chosen after seeing this check fail. It changes only how real inputs are prepared. It was not tuned: one rule, one rerun.

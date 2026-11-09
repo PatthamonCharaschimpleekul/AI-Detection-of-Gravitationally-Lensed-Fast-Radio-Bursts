@@ -12,7 +12,7 @@ import numpy as np
 
 HERE = Path(__file__).resolve().parent
 sys.path[:0] = [str(HERE), str(HERE.parent / "01_training"), str(HERE.parents[2] / "02_injection_labelling" / "01_injection")]
-from inject import BRIGHT, REAL, SNR_MIN, kind_of, load_pools, member
+from inject import BRIGHT, REAL, SNR_MIN, fill_window, kind_of, load_pools, member
 import baselines as BL
 from metrics import FPR
 
@@ -27,7 +27,11 @@ def load_real():
     c = pools["val"].c
     files = np.flatnonzero((c["file_split"] == "val") & c["eligible"] & (c["model_snr"] >= SNR_MIN))
     with h5py.File(REAL / "preproc" / "repeaters_256x160.h5") as f:
-        X, FM = f["X"][files], f["freq_mask"][files]
+        X, FM, TM = f["X"][files], f["freq_mask"][files], f["time_mask"][files]
+    # zero-padded short windows made model 6 fail (update 2026-11-09_1520): fill them like the backgrounds
+    filled = [fill_window(x, t, c["extent_lo"][i], c["extent_hi"][i]) for x, t, i in zip(X, TM, files)]
+    X = np.stack([y for y, _ in filled]).astype(np.float32)
+    load_real.n_filled, load_real.n_short = sum(ok for _, ok in filled), int(((TM <= 0).mean(1) > 0).sum())
     return pools, c, files, dict(zip(files.tolist(), range(len(files)))), X, FM >= 0.25
 
 
@@ -94,6 +98,7 @@ def main():
     snr = np.minimum(c["model_snr"][pairs[:, 0]], c["model_snr"][pairs[:, 1]])
     sa, sb = src[pairs[:, 0]], src[pairs[:, 1]]
     overlap = np.array([(M[IDX[i]] & M[IDX[j]]).mean() for i, j in pairs])
+    print(f"real windows with missing columns {load_real.n_short}, filled {load_real.n_filled}", flush=True)
     print(f"{len(files)} val files, {len(set(src[files]))} sources, {npr} real cross-source pairs, {(snr >= BRIGHT).sum()} with min S/N >= {BRIGHT:g}", flush=True)
 
     # ---- baselines and GBM features (CPU) ----
@@ -155,6 +160,7 @@ def main():
         vneg[f"m{m}_s{s}"] = v[vb["y"][keep] != 0]
 
     bins = {"[10,25)": (snr >= SNR_MIN) & (snr < BRIGHT), ">=25 (headline)": snr >= BRIGHT}
+    say(f"real windows with missing columns: {load_real.n_short}, filled with mirrored off-pulse noise: {load_real.n_filled}")
     say(f"Stage 3, val split: {len(files)} files, {len(names)} sources, {npr} real cross-source pairs, {NTWIN} twins each")
     say(f"criterion: real FPR <= {LIMIT:.0%} at the twins' {1 - FPR:.0%} quantile, per min-S/N bin; CI = source bootstrap (threshold fixed)")
     for b, sel in bins.items():
