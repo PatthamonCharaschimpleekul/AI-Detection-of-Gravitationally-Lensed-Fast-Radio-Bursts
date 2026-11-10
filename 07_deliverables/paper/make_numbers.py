@@ -67,7 +67,7 @@ def main():
             out["FarRateUp"] = sci(float(up))
             out["FarSearchUp"] = efs_up
     # Stage 3 transfer check (val sources, development).
-    s3 = TB / "02_benchmark" / "outputs" / "stage3_val.txt"
+    s3 = TB / "02_benchmark" / "outputs" / "stage3_generic_val.txt"
     if s3.exists():
         blocks = {}
         for blk in s3.read_text().split("\n\n"):

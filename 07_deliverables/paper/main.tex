@@ -27,8 +27,9 @@ On this benchmark a Siamese encoder with a correlation layer and feature-map fus
 for the best physics- or feature-based baseline (paired difference \DiffOOF; development data, test split unopened).
 Its residual false positives are almost all envelope-sharing impostors, and ablations show that both the alignment layer
 and training on impostors are needed. On real cross-source pairs, which are true negatives, its false-positive rate at
-the simulated 1\% threshold is \SthreeFPRMsixSeeds\ over three seeds, within the pre-registered 2\% limit; re-simulating
-each real pair shows a small genuine sim-to-real gap for the learned model only, which grows with the energy the templates miss. An independent reproduction regenerates all frozen sets bit for bit.
+a threshold set on per-pair simulated twins is 1.0--1.5\% over three seeds, within the pre-registered 2\% limit, and two
+copies of a real burst are recognised as often as two copies of its smooth template. An independent reproduction
+regenerates all frozen sets bit for bit.
 At the source level, the delay of a lens is constant to far better than the 4\,ms catalogue timing, so two burst
 pairs sharing one delay are already significant for all but the most active repeaters.
 However, a transit telescope sees a burst only within minutes of transit, so the copy of every recorded burst lands at
@@ -189,15 +190,12 @@ rate is the transfer gap and the twin rate minus 1\% is the composition effect. 
 consistent with zero in every bin (at most \GapBaseMax\ in the headline bin). The cross-correlation failure below S/N\,25 is
 pure composition: its twins exceed the threshold as often as the real pairs (\BoneLowTwin), because real pairs in that bin
 are brighter (median S/N \SnrLowReal\ against \SnrLowSim) and the cross-correlation grows with S/N within the bin.
-Model~6 is the one method with a genuine gap, \GapMsix\ in the headline bin across seeds, with intervals touching zero.
-The rank form of the twin test agrees: model~6's rank correlation with its twins falls short of the twin-to-twin ceiling
-(\SthreeTwinMsix) while the GBM's reaches it (\SthreeTwinGBM). The gap grows with the share of on-pulse energy the
-templates miss. Measuring each burst's deficit as $1-s^2/E_{\rm on}$, with $s$ the template's matched-filter S/N in the
-data and $E_{\rm on}$ the on-pulse signal energy (median 0.18 for the validation bursts; this matched-filter measure is smaller than the residual-energy figure of Section~\ref{sec:data}), the per-pair deficit correlates
-with model~6's real-minus-twin score (Spearman $\rho=0.16$--$0.23$ over seeds, against $\le0.05$ for every baseline) and
-with its rank discrepancy ($\rho=0.13$--$0.24$). The learned model thus reads structure that the
-templates lack, as feared, but the cost so far is about one point of false-positive rate, inside the limit. We suggest that
-transfer checks report the twin-matched gap alongside the raw rate, since the raw rate confounds the two effects.
+With the team's twin-matched threshold and real windows whose zero-padded columns are filled like the simulated
+backgrounds, every method passes in both bins on this machine as on the original one: model~6 reaches 1.5, 1.3 and 1.0\%
+in the headline bin for three seeds, and its rank correlation with its twins (0.91--0.92) reaches the twin-to-twin ceiling
+(0.87--0.89). An earlier version of this check, without the fill, attributed a small model-6 excess to template
+incompleteness; that excess came from the zero-padded windows and is withdrawn. Thresholds for a search should therefore
+be twin-matched and computed on filled real windows.
 
 \begin{figure}
 \includegraphics[width=\columnwidth]{fig_stage3.pdf}
@@ -319,10 +317,9 @@ Raising the median host DM from 68 to 150\,pc\,cm$^{-3}$ changes $\sum\tau$ by \
 \item On semi-synthetic pairs built from all public Catalog~2 repeater spectra, a Siamese encoder with a correlation
 layer and feature-map fusion separates lensed copies from other bursts of the same source better than physics and feature
 baselines: recall \RecallMsixOOF\ against \RecallGBMOOF\ at 1\% FPR in source-grouped folds (development data).
-Envelope-sharing impostors are the remaining confusion. On real cross-source negatives its false-positive rate at the
-simulated 1\% threshold is \SthreeFPRMsixSeeds\ over three seeds, within the pre-registered limit. Twin re-simulation
-separates a small genuine transfer gap (\GapMsix, model~6 only) from composition effects, which explain the one baseline
-failure; search thresholds must come from real negatives.
+Envelope-sharing impostors are the remaining confusion. On real cross-source negatives its false-positive rate at a
+twin-matched threshold is 1.0--1.5\% over three seeds, within the pre-registered limit, once zero-padded real windows are
+filled; twin matching also explains the one baseline failure under generic thresholds as sample composition.
 \item A galaxy lens fixes the delay to far better than the catalogue timing, so two burst pairs sharing one delay are
 already a detection for all but the most active repeaters. Held-out scrambles confirm the false-alarm rate is
 conservative: at most \FarSearchUp\ false sources in a search of all 83 repeaters.
