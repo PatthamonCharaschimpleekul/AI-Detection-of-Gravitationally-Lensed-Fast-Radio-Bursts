@@ -18,8 +18,7 @@
 
 \begin{document}
 
-\title{Learning to Recognise Gravitationally Lensed Fast Radio Bursts Without Real Positives: A Siamese Correlation Network,
-Real-Data Validation and Survey-Geometry Limits}
+\title{Learning to Recognise Gravitationally Lensed Fast Radio Bursts Without Real Positives}
 
 \author{\IEEEauthorblockN{Author names withheld for review}
 \IEEEauthorblockA{\textit{Department} \\
@@ -52,11 +51,11 @@ Siamese networks, pairwise verification, simulation-to-real transfer, deep learn
 \end{IEEEkeywords}
 
 \section{Introduction}
-Fast radio bursts are millisecond radio flashes from distant galaxies, and some sources repeat thousands of times. When a
-galaxy lies close to the line of sight, gravitational lensing forms two images of the source, so every burst arrives twice,
-separated by a fixed delay $\Delta t$ of days to months (Fig.~\ref{fig:concept}a). A confirmed lensed FRB would measure the
-expansion rate of the Universe and test dark-matter models~\cite{Li2018,Wucknitz2021}, but none has been
-found~\cite{Chang2024,Kader2022,Leung2022,Krochek2022}.
+Fast radio bursts are millisecond radio flashes from distant galaxies~\cite{Lorimer2007,Petroff2022}, and some sources
+repeat thousands of times. When a galaxy lies close to the line of sight, gravitational lensing forms two images of the
+source, so every burst arrives twice, separated by a fixed delay $\Delta t$ of days to months (Fig.~\ref{fig:concept}a). A
+confirmed lensed FRB would measure the expansion rate of the Universe and test dark-matter
+models~\cite{Li2018,Wucknitz2021,Munoz2016}, but none has been found~\cite{Chang2024,Kader2022,Leung2022,Krochek2022}.
 
 \begin{figure*}[t]
 \centering
@@ -73,8 +72,8 @@ Finding one is a pairwise verification problem: are two bursts from the same sky
 different bursts of a repeating source? Three properties make it hard. \emph{No real positives:} any detector is trained on
 simulation, and its transfer to real data must be checked without labelled positives. \emph{Adversarial negatives:} distinct
 bursts of one source can share a spectral envelope imposed by a plasma lens, or a scintillation pattern, and resemble copies.
-\emph{Low operating point:} the prior probability of lensing is about $10^{-3}$ per source, so decisions must hold at 1\%
-false-positive rate or below.
+\emph{Low operating point:} the probability that a given repeater is strongly lensed is $10^{-4}$ or less (the lensing
+optical depth is $1.5\times10^{-4}$ even at redshift 1), so decisions must hold at 1\% false-positive rate or below.
 
 This paper makes four contributions (Fig.~\ref{fig:workflow}):
 \begin{enumerate}
@@ -89,10 +88,12 @@ coverage, not classifier accuracy, limits discovery.
 
 \section{Related Work}
 \textbf{Siamese verification.} Siamese networks decide whether two inputs share an identity by comparing the outputs of one
-shared encoder, from signature verification~\cite{Bromley1993} to one-shot recognition~\cite{Koch2015}. Most compare global
-embedding vectors, which discards where features occur; our classic Siamese baseline is of this kind. Correlation layers that
-compare feature maps over a range of displacements were introduced for optical flow~\cite{Dosovitskiy2015}; we use one to
-estimate and remove the residual time offset between two bursts before comparing them.
+shared encoder, from signature verification~\cite{Bromley1993} and contrastive embedding~\cite{Hadsell2006} to one-shot
+recognition~\cite{Koch2015}. Most compare global embedding vectors, which discards where features occur; patch-matching
+studies contrast such networks with two-channel networks that fuse the inputs early~\cite{Zagoruyko2015}, and our baselines
+include both. Comparing feature maps over a range of displacements was introduced for optical flow~\cite{Dosovitskiy2015}
+and used for Siamese tracking~\cite{Bertinetto2016}; we use it to estimate and remove the residual time offset between two
+bursts before comparing them.
 
 \textbf{Lensed-pair identification.} For gravitational waves, lensed event pairs have been identified with a DenseNet and
 gradient boosting~\cite{Goyal2021}, and with a Siamese residual network that fuses features by absolute difference and
@@ -134,7 +135,7 @@ network scores each pair. (4) Validation uses only real negatives, a real-burst 
 \end{figure*}
 
 \textbf{Real inputs.} We use the Stokes-I dynamic spectra of all 981 bursts of the 83 repeating sources in CHIME/FRB
-Catalog~2~\cite{CHIME2025cat2} (400--800\,MHz). Each burst is binned to $256\times160$ around its emission and normalised by
+Catalog~2~\cite{CHIME2025cat2}, recorded by the CHIME transit telescope~\cite{CHIME2018} at 400--800\,MHz. Each burst is binned to $256\times160$ around its emission and normalised by
 its off-pulse noise. The catalogue's fitted burst models serve as noise-free templates (950 usable), and the off-pulse
 columns of each file, mirror-tiled, serve as real noise backgrounds (856), each with its own channel mask.
 
@@ -257,8 +258,8 @@ Model 6: mean and range of three seeds from the second machine, checkpoints sele
 \end{figure}
 
 \textbf{Sensitivity and errors.} The gain holds at every S/N and is largest in relative terms at the faint end, where model 6
-recovers 0.41 of lensed pairs against 0.12 for the GBM (Fig.~\ref{fig:snr}). At the 1\% threshold, 35--38 of model 6's 40
-false positives are impostors with a shared envelope (I1 or I1+I2), at most one is a scintillation-only impostor and 2--4 are
+recovers 0.41 of lensed pairs against 0.12 for the GBM (Fig.~\ref{fig:snr}). At the 1\% threshold, 35--38 of the 40
+false positives of each second-machine seed are impostors with a shared envelope (I1 or I1+I2), at most one is a scintillation-only impostor and 2--4 are
 plain repeats: the remaining confusion is the physically hardest case by design. Model 6 classifies 95\% of lensed pairs of
 unseen sources correctly, while its confusion of repeat and unrelated pairs on unseen sources (32\% correct against 86\% on
 seen ones) shows that part of its capacity memorises source identity, which does not affect the lensed score.
@@ -365,8 +366,9 @@ Survey & CHIME, timing & CHIME, $\ge1$ copy & All-sky, timing \\
 Table~\ref{tab:forecast} gives the expected number of detectable lensed repeaters. The Catalog~2 sample holds
 \NexpCHIME--\NexpCHIMEbias, so a null search is the expected outcome; a 10-year transit survey gains only \GainTenYr$\times$
 because the alignment requirement remains, while an all-sky monitor watching the same sources gains \GainAllSky$\times$. The
-result changes by \HostSens\ when the assumed host-galaxy dispersion is doubled. For transit surveys the classifier's role is
-to vet the rare single recorded copy and reject impostors; its full value lies with wide-field arrays such as
+result changes by \HostSens\ when the median host-galaxy dispersion measure is raised from 68 to 150\,pc\,cm$^{-3}$. For
+transit surveys, including next-generation drift-scan arrays such as CHORD~\cite{Vanderlinde2019}, the classifier's role is
+to vet the rare single recorded copy and reject impostors; its full value lies with wide-field monitors such as
 BURSTT~\cite{Ho2023}.
 
 \section{Discussion and Limitations}
@@ -385,11 +387,6 @@ machine. The same analysis shows that transit geometry, not classification accur
 repeaters, which points such detectors to wide-field radio arrays. All inputs are public (CHIME/FRB Catalog~2, DOI
 10.11570/25.0066); code, frozen-set manifests, hashes and pre-registered plans are in the project repository (link withheld
 for review).
-
-\pending{Test-split result after team sign-off; then remove this marker.}
-
-\section*{Acknowledgment}
-\pending{Funding and acknowledgments.}
 
 \bibliographystyle{IEEEtran}
 \bibliography{../paper/references}

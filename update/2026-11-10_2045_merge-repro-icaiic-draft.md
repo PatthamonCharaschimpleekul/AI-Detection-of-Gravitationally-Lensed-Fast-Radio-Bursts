@@ -52,3 +52,15 @@
   - **`fig_workflow`:** real CHIME bursts (tiles drawn from real Catalog 2 dynamic spectra) → pair simulator (pairs built from catalogue templates + noise + masks) → network → validation → deployment.
   - **`fig_arch`:** model 6 in detail. Its correlation profile and softmax weights are computed from the pair shown.
 - **Removed:** the matplotlib example-pairs figure, to fit 6 pages. The workflow figure now shows the four classes.
+
+## Addendum 2026-11-10 23:00: submission-ready pass
+- **Team decision:** the team has agreed to the submission. There is no acknowledgment section. The author block stays anonymous until EDAS submission.
+- **Test split stays sealed.** No explicit Stage 5 sign-off has been given, so the paper stands on development results, as stated in its Limitations section. The red marker is removed.
+- **Number audit:** every number in the PDF was checked against its source (outputs or team updates). Three changes followed:
+  - **Corrected:** the per-source lensing prior is now "≤ 1e-4" (τ = 1.5e-4 at z = 1). It previously read "about 1e-3", which contradicted our own forecast.
+  - **Clarified:** the false-positive breakdown is attributed to the second-machine seeds.
+  - **Clarified:** the host-DM sensitivity is stated as 68 → 150 pc/cc.
+- **References: 16 → 24, metadata checked online.** Added Lorimer 2007, Petroff 2022, CHIME/FRB 2018 system paper, Muñoz 2016, CHORD (Vanderlinde 2019), Hadsell 2006, Zagoruyko & Komodakis 2015 and Bertinetto 2016.
+  - CHORD is cited as a next-generation **drift-scan** array that faces the same alignment limit, not as an all-sky monitor.
+- **Title shortened:** "Learning to Recognise Gravitationally Lensed Fast Radio Bursts Without Real Positives".
+- **Result:** still 6 pages, no LaTeX errors or overfull boxes, all fonts embedded.
