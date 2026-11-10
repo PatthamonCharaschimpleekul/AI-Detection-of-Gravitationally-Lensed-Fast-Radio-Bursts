@@ -27,8 +27,9 @@ COLLAPSED = np.log(4) - 0.01  # F6: mean loss over the last 1000 steps at or abo
 class Pairs(IterableDataset):
     """Endless batches from the train split; S/N floor mixed half and half, as for the GBM."""
 
-    def __init__(self, seed, fold=None):
+    def __init__(self, seed, fold=None, merge=False, bandpass=False):
         self.seed, self.fold = seed, fold  # fold = (scheme, k): train on the other folds' sources
+        self.merge, self.bandpass = merge, bandpass  # plan 2026-11-10_1300: M (unrelated -> repeat target), P
 
     def __iter__(self):
         P = load_pools()["train"] if self.fold is None else fold_pools(load_pools(), *self.fold)[0]
@@ -37,7 +38,9 @@ class Pairs(IterableDataset):
         while True:
             A, Bx, Y = [], [], []
             for _ in range(BATCH):
-                xa, xb, _, _, y, _ = make_pair(KINDS[rng.integers(4)], rng, P, False, BRIGHT if rng.random() < 0.5 else SNR_MIN)
+                xa, xb, _, _, y, _ = make_pair(KINDS[rng.integers(4)], rng, P, False, BRIGHT if rng.random() < 0.5 else SNR_MIN,
+                                               self.bandpass)
+                y = 1 if self.merge and y == 2 else y
                 A.append(xa); Bx.append(xb); Y.append(y)
             yield torch.from_numpy(np.stack(A)).half(), torch.from_numpy(np.stack(Bx)).half(), torch.tensor(Y)
 
@@ -68,12 +71,15 @@ def main():
     ap.add_argument("--tag", default="")
     ap.add_argument("--fold", type=int)
     ap.add_argument("--scheme", choices=("dev", "all"), default="dev")
+    ap.add_argument("--merge-unrelated", action="store_true")  # plan 2026-11-10_1300, M
+    ap.add_argument("--bandpass", action="store_true")  # plan 2026-11-10_1300, P
     a = ap.parse_args()
     if a.fold is not None:
         return train_fold(a)
     torch.manual_seed(a.seed)
     dev = "cuda"
-    model, opt, sched, loader = setup(a.model, a.steps, 1000 + 10 * a.model + a.seed, None, 0 if a.overfit else a.workers)
+    model, opt, sched, loader = setup(a.model, a.steps, 1000 + 10 * a.model + a.seed, None, 0 if a.overfit else a.workers,
+                                      a.merge_unrelated, a.bandpass)
     it = iter(loader)
 
     if a.overfit:
@@ -126,12 +132,12 @@ def main():
     del it, loader
 
 
-def setup(model_id, steps, stream, fold=None, workers=14):
+def setup(model_id, steps, stream, fold=None, workers=14, merge=False, bandpass=False):
     model = MODELS[model_id]().to("cuda")
     opt = torch.optim.AdamW(model.parameters(), LR, weight_decay=1e-4)
     S = torch.optim.lr_scheduler
     sched = S.SequentialLR(opt, [S.LinearLR(opt, 1e-3, 1.0, WARMUP), S.CosineAnnealingLR(opt, steps - WARMUP)], [WARMUP])
-    loader = DataLoader(Pairs(stream, fold), batch_size=None, num_workers=workers, persistent_workers=workers > 0,
+    loader = DataLoader(Pairs(stream, fold, merge, bandpass), batch_size=None, num_workers=workers, persistent_workers=workers > 0,
                         prefetch_factor=4 if workers else None, pin_memory=True)
     return model, opt, sched, loader
 
@@ -147,7 +153,7 @@ def train_fold(a):
     stream = 2000 + 10 * a.model + a.fold
     torch.manual_seed(stream)
     dev = "cuda"
-    model, opt, sched, loader = setup(a.model, a.steps, stream, (a.scheme, a.fold), a.workers)
+    model, opt, sched, loader = setup(a.model, a.steps, stream, (a.scheme, a.fold), a.workers, a.merge_unrelated, a.bandpass)
     it = iter(loader)
     out = HERE / "outputs" / f"folds_{a.scheme}" / (f"m{a.model}_f{a.fold}" + a.tag)
     out.mkdir(parents=True, exist_ok=True)

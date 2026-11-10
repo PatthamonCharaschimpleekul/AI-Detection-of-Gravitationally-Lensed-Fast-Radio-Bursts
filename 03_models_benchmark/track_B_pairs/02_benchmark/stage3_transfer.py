@@ -67,17 +67,18 @@ def feats(job):
     return s, f
 
 
-def learned_scores(getter, n_items):
-    """Scores of all 12 Stage 2 checkpoints on items 0..n_items-1; getter(k) -> (xa, xb) for a chunk of indices."""
+def learned_scores(getter, n_items, runs=None):
+    """Scores of Stage 2 checkpoints on items 0..n_items-1; getter(k) -> (xa, xb) for a chunk of indices.
+    runs: output-folder names such as "m6_s0_M" (default: the 12 Stage 2 runs)."""
     import torch
     from models import MODELS
     from train import scores
     TR = HERE.parent / "01_training" / "outputs"
     nets = {}
-    for m, s in CKPTS:
-        net = MODELS[m]().to("cuda")
-        net.load_state_dict(torch.load(TR / f"m{m}_s{s}" / "best.pt", map_location="cuda"))
-        nets[f"m{m}_s{s}"] = net
+    for r in runs or [f"m{m}_s{s}" for m, s in CKPTS]:
+        net = MODELS[int(r[1])]().to("cuda")
+        net.load_state_dict(torch.load(TR / r / "best.pt", map_location="cuda"))
+        nets[r] = net
     out = {k: [] for k in nets}
     for lo in range(0, n_items, 1000):
         A, B = getter(range(lo, min(lo + 1000, n_items)))
@@ -88,14 +89,14 @@ def learned_scores(getter, n_items):
     return {k: np.concatenate(v).astype(float) for k, v in out.items()}
 
 
-def operating_negatives():
+def operating_negatives(runs=None):
     """val_bright repeat + impostor scores per method: their 99th percentile is the primary metric's threshold."""
     vb = np.load(OUT / "scores_val_bright.npz")
     keep = vb["y"] != 2
     neg = vb["y"][keep] != 0
     out = {k: vb[k][keep][neg] for k in BASE + ["b3_gbm"]}
-    for m, s in CKPTS:
-        out[f"m{m}_s{s}"] = np.load(HERE.parent / "01_training" / "outputs" / f"m{m}_s{s}" / "val_bright_scores.npy")[neg]
+    for r in runs or [f"m{m}_s{s}" for m, s in CKPTS]:
+        out[r] = np.load(HERE.parent / "01_training" / "outputs" / r / "val_bright_scores.npy")[neg]
     return out
 
 

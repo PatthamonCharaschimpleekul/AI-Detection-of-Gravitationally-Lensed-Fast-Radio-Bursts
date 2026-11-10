@@ -315,13 +315,15 @@ def fshift(a, d):
     return np.fft.irfft(F, n, axis=1)[:, :WIN]
 
 
-def member(c, ti, bi, snr, rng, tau600, wide, off=(), gain_shared=None, scint_shared=None, S0=None, amp=None):
+def member(c, ti, bi, snr, rng, tau600, wide, off=(), gain_shared=None, scint_shared=None, S0=None, amp=None,
+           bandpass=False):
     """One pair member: template ti on background row bi at injected matched-filter S/N snr.
     off: nuisances to switch off ("shift", "dm", "scint") for the twin ladder; draws still happen
     so the remaining nuisances get identical values. gain_shared / scint_shared: impostor imprints
     shared by both members (I1 plasma-lens gain, I2 scintillation pattern) instead of independent ones.
     S0, amp: inject the image S0 (e.g. a real-burst cutout, already in sigma units) at fixed amplitude amp instead of
-    template ti at S/N snr; snr still sets the residual-DM width. Same rng draws either way (plan 2026-11-10_0900)."""
+    template ti at S/N snr; snr still sets the residual-DM width. Same rng draws either way (plan 2026-11-10_0900).
+    bandpass: the stress set's smooth gain multiplier alone, for training only (plan 2026-11-10_1300, P)."""
     f = c["freq_mhz"]
     fi = c["bg_file"][bi]
     mask = c["fm"][fi] >= 0.25
@@ -349,7 +351,7 @@ def member(c, ti, bi, snr, rng, tau600, wide, off=(), gain_shared=None, scint_sh
     # bands that do not overlap leave nothing to transfer: the pair then stays a plain repeat
     if gain_shared is not None and ((S * gain_shared[:, None])[mask] ** 2).sum() > 0:
         gain = gain * gain_shared
-    if wide:  # stress only: smooth beam/bandpass multiplier
+    if wide or bandpass:  # stress set, or training augmentation P: smooth beam/bandpass multiplier
         x = (f - f[0]) / (f[-1] - f[0])
         gain *= np.clip(1 + 0.3 * sum(rng.normal() * np.cos(2 * np.pi * k * x + rng.uniform(0, 2 * np.pi))
                                       for k in (1, 2, 3)) / np.sqrt(3), 0.05, None)
@@ -381,7 +383,7 @@ def envelope_transfer(Ta, Tb):
     return np.clip(ea / np.maximum(eb, 1e-3), 0.0, I1_RMAX)
 
 
-def make_pair(kind, rng, P, wide=False, snr_floor=SNR_MIN):
+def make_pair(kind, rng, P, wide=False, snr_floor=SNR_MIN, bandpass=False):
     """Returns xa, xb (NF, WIN) float32, mask_a, mask_b, label (0 lensed, 1 repeat, 2 unrelated, 3 impostor), info.
     impostor = two different templates of one source sharing I1 (plasma-lens gain), I2 (scintillation) or both."""
     c = P.c
@@ -418,8 +420,9 @@ def make_pair(kind, rng, P, wide=False, snr_floor=SNR_MIN):
     hi = 3.0 if wide else 1.0
     tau = float(np.exp(rng.uniform(np.log(0.01), np.log(hi)))) if rng.random() < 0.5 else 0.0
     which = int(rng.integers(2))
-    xa, ma, ia = member(c, ta, ba, snr_a, rng, tau if which == 0 else 0.0, wide, scint_shared=ssh)
-    xb, mb, ib = member(c, tb, bb, snr_b, rng, tau if which == 1 else 0.0, wide, gain_shared=gsh, scint_shared=ssh)
+    xa, ma, ia = member(c, ta, ba, snr_a, rng, tau if which == 0 else 0.0, wide, scint_shared=ssh, bandpass=bandpass)
+    xb, mb, ib = member(c, tb, bb, snr_b, rng, tau if which == 1 else 0.0, wide, gain_shared=gsh, scint_shared=ssh,
+                        bandpass=bandpass)
     swap = bool(rng.random() < 0.5)
     info = dict(kind=kind, src_a=s, src_b=s2, tmpl_a=c["tns"][ta], tmpl_b=c["tns"][tb], ti_a=int(ta), ti_b=int(tb),
                 bg_a=c["tns"][c["bg_file"][ba]], bg_b=c["tns"][c["bg_file"][bb]], bi_a=int(ba), bi_b=int(bb),

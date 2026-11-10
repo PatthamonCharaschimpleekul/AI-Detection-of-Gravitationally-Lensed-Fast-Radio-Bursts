@@ -4,7 +4,7 @@
 - **Pipeline box:** `03_models_benchmark/track_B_pairs/01_training`; `02_injection_labelling/01_injection` (training-only option)
 - **Follows:** [update 1130](../update/2026-11-10_1130_real-burst-lensed-and-fit-check.md)
 - **Amends:** [plan 1223](2026-11-06_1223_phase3-trackB-benchmark.md) (Stage 2 training) and [plan 0845](2026-11-08_0845_grouped-fold-addendum.md) F4 (the training settings the folds freeze)
-- **Status:** proposed. Nothing runs before agreement. The decision rule below is fixed before any result.
+- **Status:** agreed 2026-11-10 (user: "Approve, start"). The decision rule below is fixed before any result.
 
 ## Why
 - Model 6 learns which **source** a burst comes from. On seen sources it tells repeat from unrelated almost perfectly (0.86 correct), but on unseen sources half of the repeats are called unrelated.

@@ -58,6 +58,15 @@ def load_net(path, m):
     return net
 
 
+def seen_unseen_sets(pools):
+    """(train_bright_chk: new pairs from seen train templates, val_bright: unseen sources), float16 to save RAM."""
+    A, B, Y = [], [], []
+    for _, xa, xb, ma, mb, y, _ in gen_set(pools["train"], CHK_N, CHK_SEED, False, True, BRIGHT):
+        A.append(xa.astype(np.float16)); B.append(xb.astype(np.float16)); Y.append(y)
+    VA, VB, _, _, VY = load_set("val_bright", pools)
+    return (np.stack(A), np.stack(B), np.array(Y)), (VA.astype(np.float16), VB.astype(np.float16), VY)
+
+
 def main():
     say("1. learning curves (val_bright recall every 1000 steps; training loss = running mean)")
     say(f"  {'run':7s} {'best@step':>12s} {'final':>6s} {'drop':>6s} {'slope last5/1k':>15s} {'loss 1k->20k':>14s}  reading")
@@ -73,13 +82,7 @@ def main():
         say(f"  m{m}_s{s}  {v[b]:.3f}@{r[b]['step']:>6s} {v[-1]:6.3f} {v[b] - v[-1]:6.3f} {slope:+15.4f} {L[0]:6.3f}->{L[-1]:.3f}  {read}")
 
     pools = load_pools()
-    A, B, Y = [], [], []
-    for _, xa, xb, ma, mb, y, _ in gen_set(pools["train"], CHK_N, CHK_SEED, False, True, BRIGHT):
-        A.append(xa); B.append(xb); Y.append(y)
-    TA, TB, TY = np.stack(A).astype(np.float16), np.stack(B).astype(np.float16), np.array(Y)
-    del A, B
-    VA, VB, _, _, VY = load_set("val_bright", pools)
-    VA, VB = VA.astype(np.float16), VB.astype(np.float16)
+    (TA, TB, TY), (VA, VB, VY) = seen_unseen_sets(pools)
     say(f"\n2. seen templates (train_bright_chk: {CHK_N} new pairs from train templates, seed {CHK_SEED}) vs unseen (val_bright)")
     say(f"  {'run':7s} {'CE train/val':>14s} {'acc train/val':>14s} {'AUC train/val':>14s} {'recall train/val':>17s}  gaps CE / recall")
     conf = {}

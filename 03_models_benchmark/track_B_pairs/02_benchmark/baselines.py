@@ -127,9 +127,9 @@ def init(fold=None):
 
 def work(job):
     """job = (split, kind, seed list, wide, floor); exactly the call gen_set makes for a frozen pair."""
-    split, kind, seed, wide, floor = job
+    split, kind, seed, wide, floor, *bp = job  # optional 6th: bandpass augmentation (plan 2026-11-10_1300)
     P = POOLS[split]
-    xa, xb, ma, mb, y, info = make_pair(kind, np.random.default_rng(seed), P, wide, floor)
+    xa, xb, ma, mb, y, info = make_pair(kind, np.random.default_rng(seed), P, wide, floor, bool(bp and bp[0]))
     s, f = score_pair(xa, ma, xb, mb, P.c["freq_mhz"])
     return s, f, y, info["src_a"], min(info["snr_a"], info["snr_b"]), info["imp_type"], info["tmpl_a"], info["snr_a"]
 
@@ -151,19 +151,21 @@ def frozen(pool, name):
     return d
 
 
-def gbm_jobs(split, base):
+def gbm_jobs(split, base, bandpass=False):
     """GBM training pairs: N_TRAIN at the S/N floor 10, then N_TRAIN at 25; seed list [base + floor index, i]."""
-    return [(split, KINDS[i % 4], [base + (i >= N_TRAIN), i], False, 25.0 if i >= N_TRAIN else SNR_MIN) for i in range(2 * N_TRAIN)]
+    return [(split, KINDS[i % 4], [base + (i >= N_TRAIN), i], False, 25.0 if i >= N_TRAIN else SNR_MIN, bandpass)
+            for i in range(2 * N_TRAIN)]
 
 
-def fit_gbm(pool):
+def fit_gbm(pool, bandpass=False):
     """The Stage 1 GBM, refitted (deterministic); checked against the saved val_bright scores on 200 pairs.
+    bandpass: train on augmented pairs instead (P-GBM, plan 2026-11-10_1300; no saved scores to check against).
     pool must be initialised with init()."""
     from sklearn.ensemble import HistGradientBoostingClassifier
-    tr = run(pool, gbm_jobs("train", 300))
+    tr = run(pool, gbm_jobs("train", 300, bandpass))
     chk = run(pool, [("val", kind_of(k, True), [201, k], False, BRIGHT) for k in range(200)])
     gbm = HistGradientBoostingClassifier(random_state=0).fit(tr["f"], tr["y"] == 0)
-    assert np.allclose(gbm.predict_proba(chk["f"])[:, 1], np.load(OUT / "scores_val_bright.npz")["b3_gbm"][:200]), "GBM refit differs from Stage 1"
+    assert bandpass or np.allclose(gbm.predict_proba(chk["f"])[:, 1], np.load(OUT / "scores_val_bright.npz")["b3_gbm"][:200]),         "GBM refit differs from Stage 1"
     return gbm
 
 
