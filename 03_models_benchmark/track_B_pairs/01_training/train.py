@@ -5,6 +5,7 @@ Usage (venv python, from this folder):
   python -I train.py --model 6 --overfit             # self-check: memorise one batch
   python -I train.py --model 6 --shuffle --steps N   # self-check: shuffled labels must give AUC ~ 0.5
   python -I train.py --model 6 --fold K --scheme dev --steps 20000   # grouped fold K (plan 2026-11-08_0845) -> outputs/folds_dev/m6_f{K}/
+  Stage 4 ablations (model 6): --no-align, --hardneg, --no-impostors; each adds its name to the output folder.
 Test sets are never read here. Scheme 'all' trains on test-split sources, so it refuses to run before the benchmark-v1 tag (F8).
 """
 import argparse, csv, sys, time
@@ -24,12 +25,25 @@ BATCH, LR, WARMUP = 64, 1e-3, 1000  # warmup: without it the head ReLUs died in 
 COLLAPSED = np.log(4) - 0.01  # F6: mean loss over the last 1000 steps at or above this = collapsed run
 
 
-class Pairs(IterableDataset):
-    """Endless batches from the train split; S/N floor mixed half and half, as for the GBM."""
+HARDNEG_K = 4  # Stage 4: a hard repeat is the most template-similar of K candidate repeat pairs
 
-    def __init__(self, seed, fold=None, merge=False, bandpass=False):
+
+def template_sim(c, ta, tb):
+    """Correlation of two noise-free templates over the whole image (no noise, no nuisances)."""
+    a, b = c["T"][ta].ravel(), c["T"][tb].ravel()
+    return float(a @ b / (np.linalg.norm(a) * np.linalg.norm(b) + 1e-12))
+
+
+class Pairs(IterableDataset):
+    """Endless batches from the train split; S/N floor mixed half and half, as for the GBM.
+    Plan 2026-11-10_1300 options: merge (unrelated -> repeat target), bandpass (random smooth bandpass per member).
+    Stage 4 options: kinds without impostors; half of the repeats replaced by the most similar of HARDNEG_K draws.
+    With all options off, the rng draws are exactly those of the original loop."""
+
+    def __init__(self, seed, fold=None, merge=False, bandpass=False, kinds=KINDS, hardneg=False):
         self.seed, self.fold = seed, fold  # fold = (scheme, k): train on the other folds' sources
         self.merge, self.bandpass = merge, bandpass  # plan 2026-11-10_1300: M (unrelated -> repeat target), P
+        self.kinds, self.hardneg = kinds, hardneg  # Stage 4 ablations
 
     def __iter__(self):
         P = load_pools()["train"] if self.fold is None else fold_pools(load_pools(), *self.fold)[0]
@@ -38,8 +52,13 @@ class Pairs(IterableDataset):
         while True:
             A, Bx, Y = [], [], []
             for _ in range(BATCH):
-                xa, xb, _, _, y, _ = make_pair(KINDS[rng.integers(4)], rng, P, False, BRIGHT if rng.random() < 0.5 else SNR_MIN,
-                                               self.bandpass)
+                kind = self.kinds[rng.integers(len(self.kinds))]
+                floor = BRIGHT if rng.random() < 0.5 else SNR_MIN
+                if self.hardneg and kind == "repeat" and rng.random() < 0.5:
+                    cands = [make_pair(kind, rng, P, False, floor, self.bandpass) for _ in range(HARDNEG_K)]
+                    xa, xb, _, _, y, _ = max(cands, key=lambda p: template_sim(P.c, p[5]["ti_a"], p[5]["ti_b"]))
+                else:
+                    xa, xb, _, _, y, _ = make_pair(kind, rng, P, False, floor, self.bandpass)
                 y = 1 if self.merge and y == 2 else y
                 A.append(xa); Bx.append(xb); Y.append(y)
             yield torch.from_numpy(np.stack(A)).half(), torch.from_numpy(np.stack(Bx)).half(), torch.tensor(Y)
@@ -73,13 +92,18 @@ def main():
     ap.add_argument("--scheme", choices=("dev", "all"), default="dev")
     ap.add_argument("--merge-unrelated", action="store_true")  # plan 2026-11-10_1300, M
     ap.add_argument("--bandpass", action="store_true")  # plan 2026-11-10_1300, P
+    ap.add_argument("--no-align", action="store_true", help="Stage 4: model 6 without the correlation alignment")
+    ap.add_argument("--hardneg", action="store_true", help="Stage 4: hard-negative oversampling of repeats")
+    ap.add_argument("--no-impostors", action="store_true", help="Stage 4: train without the impostor class")
     a = ap.parse_args()
+    a.tag += "".join(f"_{k}" for k, v in (("noalign", a.no_align), ("hardneg", a.hardneg), ("noimp", a.no_impostors)) if v)
     if a.fold is not None:
         return train_fold(a)
     torch.manual_seed(a.seed)
     dev = "cuda"
     model, opt, sched, loader = setup(a.model, a.steps, 1000 + 10 * a.model + a.seed, None, 0 if a.overfit else a.workers,
-                                      a.merge_unrelated, a.bandpass)
+                                      a.merge_unrelated, a.bandpass, align=not a.no_align,
+                                      kinds=tuple(k for k in KINDS if not (a.no_impostors and k == "impostor")), hardneg=a.hardneg)
     it = iter(loader)
 
     if a.overfit:
@@ -132,12 +156,13 @@ def main():
     del it, loader
 
 
-def setup(model_id, steps, stream, fold=None, workers=14, merge=False, bandpass=False):
-    model = MODELS[model_id]().to("cuda")
+def setup(model_id, steps, stream, fold=None, workers=14, merge=False, bandpass=False, align=True, kinds=KINDS, hardneg=False):
+    assert align or model_id == 6, "--no-align applies to model 6 only"
+    model = (MODELS[model_id]() if align else MODELS[6](align=False)).to("cuda")
     opt = torch.optim.AdamW(model.parameters(), LR, weight_decay=1e-4)
     S = torch.optim.lr_scheduler
     sched = S.SequentialLR(opt, [S.LinearLR(opt, 1e-3, 1.0, WARMUP), S.CosineAnnealingLR(opt, steps - WARMUP)], [WARMUP])
-    loader = DataLoader(Pairs(stream, fold, merge, bandpass), batch_size=None, num_workers=workers, persistent_workers=workers > 0,
+    loader = DataLoader(Pairs(stream, fold, merge, bandpass, kinds, hardneg), batch_size=None, num_workers=workers, persistent_workers=workers > 0,
                         prefetch_factor=4 if workers else None, pin_memory=True)
     return model, opt, sched, loader
 

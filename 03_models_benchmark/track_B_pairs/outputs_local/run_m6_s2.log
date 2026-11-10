@@ -1,0 +1,23 @@
+C:\Users\usEr\AppData\Roaming\Python\Python312\site-packages\triton\windows_utils.py:404: UserWarning: Failed to find CUDA.
+  warnings.warn("Failed to find CUDA.")
+step 1000 loss 1.0132 val recall 0.373 auc 0.968  93s  689 pairs/s
+step 2000 loss 0.8150 val recall 0.533 auc 0.979  184s  695 pairs/s
+step 3000 loss 0.7447 val recall 0.461 auc 0.982  276s  697 pairs/s
+step 4000 loss 0.7016 val recall 0.508 auc 0.982  367s  698 pairs/s
+step 5000 loss 0.6734 val recall 0.560 auc 0.984  458s  698 pairs/s
+step 6000 loss 0.6509 val recall 0.602 auc 0.983  550s  699 pairs/s
+step 7000 loss 0.6308 val recall 0.561 auc 0.984  641s  699 pairs/s
+step 8000 loss 0.6144 val recall 0.542 auc 0.983  732s  699 pairs/s
+step 9000 loss 0.5965 val recall 0.563 auc 0.985  823s  700 pairs/s
+step 10000 loss 0.5793 val recall 0.579 auc 0.985  915s  700 pairs/s
+step 11000 loss 0.5695 val recall 0.612 auc 0.985  1006s  700 pairs/s
+step 12000 loss 0.5652 val recall 0.570 auc 0.985  1097s  700 pairs/s
+step 13000 loss 0.5512 val recall 0.557 auc 0.985  1188s  700 pairs/s
+step 14000 loss 0.5445 val recall 0.576 auc 0.985  1280s  700 pairs/s
+step 15000 loss 0.5301 val recall 0.570 auc 0.985  1371s  700 pairs/s
+step 16000 loss 0.5238 val recall 0.605 auc 0.986  1462s  700 pairs/s
+step 17000 loss 0.5158 val recall 0.599 auc 0.986  1553s  700 pairs/s
+step 18000 loss 0.5203 val recall 0.611 auc 0.986  1645s  700 pairs/s
+step 19000 loss 0.5105 val recall 0.614 auc 0.986  1736s  700 pairs/s
+step 20000 loss 0.5159 val recall 0.616 auc 0.986  1827s  700 pairs/s
+best val recall 0.616

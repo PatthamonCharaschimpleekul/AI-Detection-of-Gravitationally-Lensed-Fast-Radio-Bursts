@@ -1,0 +1,146 @@
+89 real val bursts from 26 sources -> 3750 cross-source pairs; mask-overlap split at the real median 0.855
+GBM training pairs (train split, recipe of baselines.py)
+  sim_job: 1024/20000
+  sim_job: 2048/20000
+  sim_job: 3072/20000
+  sim_job: 4096/20000
+  sim_job: 5120/20000
+  sim_job: 6144/20000
+  sim_job: 7168/20000
+  sim_job: 8192/20000
+  sim_job: 9216/20000
+  sim_job: 10240/20000
+  sim_job: 11264/20000
+  sim_job: 12288/20000
+  sim_job: 13312/20000
+  sim_job: 14336/20000
+  sim_job: 15360/20000
+  sim_job: 16384/20000
+  sim_job: 17408/20000
+  sim_job: 18432/20000
+  sim_job: 19456/20000
+  sim_job: 20000/20000
+  real_job: 1024/3750
+  real_job: 2048/3750
+  real_job: 3072/3750
+  real_job: 3750/3750
+  twin_job: 1024/3750
+  twin_job: 2048/3750
+  twin_job: 3072/3750
+  twin_job: 3750/3750
+  twin_job: 1024/3750
+  twin_job: 2048/3750
+  twin_job: 3072/3750
+  twin_job: 3750/3750
+Stage 3 transfer check on val-split sources (development). 3750 real cross-source pairs, 20000 simulated unrelated. Criterion: real FPR <= 2% at the sim 1% threshold.
+real FPR CI: source bootstrap (pairs weighted by both sources' multiplicities). '-' = fewer than 100 sim or 30 real pairs.
+
+b1_blk1
+  S/N 10-25                                  n_sim 10317 n_real  2794  real FPR 0.062 [0.029, 0.109] FAIL  twin Spearman real-sim 0.77 / sim-sim 0.78
+  S/N 25-50                                  n_sim  7735 n_real   708  real FPR 0.008 [0.000, 0.026] PASS  twin Spearman real-sim 0.94 / sim-sim 0.93
+  S/N 50-inf                                 n_sim  1948 n_real    85  real FPR 0.035 [0.000, 0.125] FAIL  twin Spearman real-sim 0.94 / sim-sim 0.98
+  S/N >= 25 (headline)                       n_sim  9683 n_real   793  real FPR 0.009 [0.000, 0.033] PASS  twin Spearman real-sim 0.95 / sim-sim 0.95
+  S/N 10-25, overlap < 0.86                  n_sim  5103 n_real  1348  real FPR 0.076 [0.036, 0.131] FAIL  twin Spearman real-sim 0.77 / sim-sim 0.80
+  S/N 10-25, overlap >= 0.86                 n_sim  5214 n_real  1446  real FPR 0.052 [0.019, 0.104] FAIL  twin Spearman real-sim 0.77 / sim-sim 0.77
+  S/N 25-50, overlap < 0.86                  n_sim  3867 n_real   356  real FPR 0.006 [0.000, 0.024] PASS  twin Spearman real-sim 0.93 / sim-sim 0.93
+  S/N 25-50, overlap >= 0.86                 n_sim  3868 n_real   352  real FPR 0.011 [0.000, 0.039] PASS  twin Spearman real-sim 0.94 / sim-sim 0.93
+  S/N 50-inf, overlap < 0.86                 n_sim   928 n_real    32  real FPR 0.000 [0.000, 0.000] PASS  twin Spearman real-sim 0.97 / sim-sim 0.98
+  S/N 50-inf, overlap >= 0.86                n_sim  1020 n_real    53  real FPR 0.057 [0.000, 0.182] FAIL  twin Spearman real-sim 0.91 / sim-sim 0.98
+
+b1_blk4
+  S/N 10-25                                  n_sim 10317 n_real  2794  real FPR 0.038 [0.018, 0.065] FAIL  twin Spearman real-sim 0.81 / sim-sim 0.83
+  S/N 25-50                                  n_sim  7735 n_real   708  real FPR 0.007 [0.000, 0.024] PASS  twin Spearman real-sim 0.94 / sim-sim 0.93
+  S/N 50-inf                                 n_sim  1948 n_real    85  real FPR 0.024 [0.000, 0.119] FAIL  twin Spearman real-sim 0.95 / sim-sim 0.98
+  S/N >= 25 (headline)                       n_sim  9683 n_real   793  real FPR 0.009 [0.000, 0.030] PASS  twin Spearman real-sim 0.95 / sim-sim 0.95
+  S/N 10-25, overlap < 0.86                  n_sim  5103 n_real  1348  real FPR 0.050 [0.022, 0.085] FAIL  twin Spearman real-sim 0.81 / sim-sim 0.84
+  S/N 10-25, overlap >= 0.86                 n_sim  5214 n_real  1446  real FPR 0.030 [0.012, 0.059] FAIL  twin Spearman real-sim 0.81 / sim-sim 0.81
+  S/N 25-50, overlap < 0.86                  n_sim  3867 n_real   356  real FPR 0.003 [0.000, 0.019] PASS  twin Spearman real-sim 0.95 / sim-sim 0.94
+  S/N 25-50, overlap >= 0.86                 n_sim  3868 n_real   352  real FPR 0.006 [0.000, 0.026] PASS  twin Spearman real-sim 0.94 / sim-sim 0.93
+  S/N 50-inf, overlap < 0.86                 n_sim   928 n_real    32  real FPR 0.000 [0.000, 0.000] PASS  twin Spearman real-sim 0.96 / sim-sim 0.98
+  S/N 50-inf, overlap >= 0.86                n_sim  1020 n_real    53  real FPR 0.038 [0.000, 0.167] FAIL  twin Spearman real-sim 0.92 / sim-sim 0.97
+
+b1_blk16
+  S/N 10-25                                  n_sim 10317 n_real  2794  real FPR 0.024 [0.013, 0.038] FAIL  twin Spearman real-sim 0.85 / sim-sim 0.86
+  S/N 25-50                                  n_sim  7735 n_real   708  real FPR 0.008 [0.000, 0.029] PASS  twin Spearman real-sim 0.95 / sim-sim 0.94
+  S/N 50-inf                                 n_sim  1948 n_real    85  real FPR 0.012 [0.000, 0.076] PASS  twin Spearman real-sim 0.96 / sim-sim 0.98
+  S/N >= 25 (headline)                       n_sim  9683 n_real   793  real FPR 0.005 [0.000, 0.016] PASS  twin Spearman real-sim 0.96 / sim-sim 0.95
+  S/N 10-25, overlap < 0.86                  n_sim  5103 n_real  1348  real FPR 0.026 [0.011, 0.044] FAIL  twin Spearman real-sim 0.86 / sim-sim 0.88
+  S/N 10-25, overlap >= 0.86                 n_sim  5214 n_real  1446  real FPR 0.021 [0.009, 0.036] FAIL  twin Spearman real-sim 0.85 / sim-sim 0.84
+  S/N 25-50, overlap < 0.86                  n_sim  3867 n_real   356  real FPR 0.006 [0.000, 0.027] PASS  twin Spearman real-sim 0.96 / sim-sim 0.94
+  S/N 25-50, overlap >= 0.86                 n_sim  3868 n_real   352  real FPR 0.011 [0.000, 0.043] PASS  twin Spearman real-sim 0.94 / sim-sim 0.94
+  S/N 50-inf, overlap < 0.86                 n_sim   928 n_real    32  real FPR 0.000 [0.000, 0.000] PASS  twin Spearman real-sim 0.97 / sim-sim 0.98
+  S/N 50-inf, overlap >= 0.86                n_sim  1020 n_real    53  real FPR 0.057 [0.000, 0.176] FAIL  twin Spearman real-sim 0.95 / sim-sim 0.97
+
+b2_blk1
+  S/N 10-25                                  n_sim 10317 n_real  2794  real FPR 0.006 [0.000, 0.021] PASS  twin Spearman real-sim 0.64 / sim-sim 0.71
+  S/N 25-50                                  n_sim  7735 n_real   708  real FPR 0.001 [0.000, 0.009] PASS  twin Spearman real-sim 0.91 / sim-sim 0.92
+  S/N 50-inf                                 n_sim  1948 n_real    85  real FPR 0.000 [0.000, 0.000] PASS  twin Spearman real-sim 0.91 / sim-sim 0.97
+  S/N >= 25 (headline)                       n_sim  9683 n_real   793  real FPR 0.003 [0.000, 0.013] PASS  twin Spearman real-sim 0.92 / sim-sim 0.93
+  S/N 10-25, overlap < 0.86                  n_sim  5103 n_real  1348  real FPR 0.000 [0.000, 0.000] PASS  twin Spearman real-sim 0.64 / sim-sim 0.73
+  S/N 10-25, overlap >= 0.86                 n_sim  5214 n_real  1446  real FPR 0.011 [0.000, 0.041] PASS  twin Spearman real-sim 0.64 / sim-sim 0.69
+  S/N 25-50, overlap < 0.86                  n_sim  3867 n_real   356  real FPR 0.006 [0.000, 0.031] PASS  twin Spearman real-sim 0.91 / sim-sim 0.91
+  S/N 25-50, overlap >= 0.86                 n_sim  3868 n_real   352  real FPR 0.000 [0.000, 0.000] PASS  twin Spearman real-sim 0.92 / sim-sim 0.93
+  S/N 50-inf, overlap < 0.86                 n_sim   928 n_real    32  real FPR 0.000 [0.000, 0.000] PASS  twin Spearman real-sim 0.97 / sim-sim 0.97
+  S/N 50-inf, overlap >= 0.86                n_sim  1020 n_real    53  real FPR 0.000 [0.000, 0.000] PASS  twin Spearman real-sim 0.86 / sim-sim 0.95
+
+b2_blk4
+  S/N 10-25                                  n_sim 10317 n_real  2794  real FPR 0.006 [0.000, 0.023] PASS  twin Spearman real-sim 0.72 / sim-sim 0.75
+  S/N 25-50                                  n_sim  7735 n_real   708  real FPR 0.003 [0.000, 0.015] PASS  twin Spearman real-sim 0.93 / sim-sim 0.93
+  S/N 50-inf                                 n_sim  1948 n_real    85  real FPR 0.000 [0.000, 0.000] PASS  twin Spearman real-sim 0.93 / sim-sim 0.98
+  S/N >= 25 (headline)                       n_sim  9683 n_real   793  real FPR 0.004 [0.000, 0.016] PASS  twin Spearman real-sim 0.93 / sim-sim 0.93
+  S/N 10-25, overlap < 0.86                  n_sim  5103 n_real  1348  real FPR 0.001 [0.000, 0.007] PASS  twin Spearman real-sim 0.73 / sim-sim 0.77
+  S/N 10-25, overlap >= 0.86                 n_sim  5214 n_real  1446  real FPR 0.012 [0.000, 0.043] PASS  twin Spearman real-sim 0.71 / sim-sim 0.73
+  S/N 25-50, overlap < 0.86                  n_sim  3867 n_real   356  real FPR 0.006 [0.000, 0.031] PASS  twin Spearman real-sim 0.92 / sim-sim 0.92
+  S/N 25-50, overlap >= 0.86                 n_sim  3868 n_real   352  real FPR 0.000 [0.000, 0.000] PASS  twin Spearman real-sim 0.93 / sim-sim 0.93
+  S/N 50-inf, overlap < 0.86                 n_sim   928 n_real    32  real FPR 0.000 [0.000, 0.000] PASS  twin Spearman real-sim 0.94 / sim-sim 0.98
+  S/N 50-inf, overlap >= 0.86                n_sim  1020 n_real    53  real FPR 0.000 [0.000, 0.000] PASS  twin Spearman real-sim 0.89 / sim-sim 0.96
+
+b2_blk16
+  S/N 10-25                                  n_sim 10317 n_real  2794  real FPR 0.010 [0.000, 0.036] PASS  twin Spearman real-sim 0.80 / sim-sim 0.83
+  S/N 25-50                                  n_sim  7735 n_real   708  real FPR 0.004 [0.000, 0.022] PASS  twin Spearman real-sim 0.94 / sim-sim 0.94
+  S/N 50-inf                                 n_sim  1948 n_real    85  real FPR 0.000 [0.000, 0.000] PASS  twin Spearman real-sim 0.95 / sim-sim 0.98
+  S/N >= 25 (headline)                       n_sim  9683 n_real   793  real FPR 0.004 [0.000, 0.019] PASS  twin Spearman real-sim 0.95 / sim-sim 0.94
+  S/N 10-25, overlap < 0.86                  n_sim  5103 n_real  1348  real FPR 0.001 [0.000, 0.008] PASS  twin Spearman real-sim 0.82 / sim-sim 0.85
+  S/N 10-25, overlap >= 0.86                 n_sim  5214 n_real  1446  real FPR 0.018 [0.000, 0.063] PASS  twin Spearman real-sim 0.79 / sim-sim 0.82
+  S/N 25-50, overlap < 0.86                  n_sim  3867 n_real   356  real FPR 0.006 [0.000, 0.031] PASS  twin Spearman real-sim 0.94 / sim-sim 0.93
+  S/N 25-50, overlap >= 0.86                 n_sim  3868 n_real   352  real FPR 0.000 [0.000, 0.000] PASS  twin Spearman real-sim 0.95 / sim-sim 0.94
+  S/N 50-inf, overlap < 0.86                 n_sim   928 n_real    32  real FPR 0.000 [0.000, 0.000] PASS  twin Spearman real-sim 0.96 / sim-sim 0.99
+  S/N 50-inf, overlap >= 0.86                n_sim  1020 n_real    53  real FPR 0.019 [0.000, 0.111] PASS  twin Spearman real-sim 0.92 / sim-sim 0.96
+
+b3_gbm
+  S/N 10-25                                  n_sim 10317 n_real  2794  real FPR 0.012 [0.005, 0.018] PASS  twin Spearman real-sim 0.77 / sim-sim 0.77
+  S/N 25-50                                  n_sim  7735 n_real   708  real FPR 0.010 [0.000, 0.024] PASS  twin Spearman real-sim 0.82 / sim-sim 0.81
+  S/N 50-inf                                 n_sim  1948 n_real    85  real FPR 0.035 [0.000, 0.125] FAIL  twin Spearman real-sim 0.91 / sim-sim 0.93
+  S/N >= 25 (headline)                       n_sim  9683 n_real   793  real FPR 0.013 [0.002, 0.028] PASS  twin Spearman real-sim 0.83 / sim-sim 0.83
+  S/N 10-25, overlap < 0.86                  n_sim  5103 n_real  1348  real FPR 0.015 [0.002, 0.027] PASS  twin Spearman real-sim 0.74 / sim-sim 0.74
+  S/N 10-25, overlap >= 0.86                 n_sim  5214 n_real  1446  real FPR 0.010 [0.000, 0.023] PASS  twin Spearman real-sim 0.78 / sim-sim 0.79
+  S/N 25-50, overlap < 0.86                  n_sim  3867 n_real   356  real FPR 0.000 [0.000, 0.000] PASS  twin Spearman real-sim 0.79 / sim-sim 0.77
+  S/N 25-50, overlap >= 0.86                 n_sim  3868 n_real   352  real FPR 0.020 [0.000, 0.047] PASS  twin Spearman real-sim 0.85 / sim-sim 0.85
+  S/N 50-inf, overlap < 0.86                 n_sim   928 n_real    32  real FPR 0.000 [0.000, 0.000] PASS  twin Spearman real-sim 0.89 / sim-sim 0.88
+  S/N 50-inf, overlap >= 0.86                n_sim  1020 n_real    53  real FPR 0.057 [0.000, 0.176] FAIL  twin Spearman real-sim 0.88 / sim-sim 0.93
+
+m6:m6_s0
+  S/N 10-25                                  n_sim 10317 n_real  2794  real FPR 0.005 [0.001, 0.011] PASS  twin Spearman real-sim 0.70 / sim-sim 0.79
+  S/N 25-50                                  n_sim  7735 n_real   708  real FPR 0.011 [0.000, 0.035] PASS  twin Spearman real-sim 0.74 / sim-sim 0.87
+  S/N 50-inf                                 n_sim  1948 n_real    85  real FPR 0.024 [0.000, 0.119] FAIL  twin Spearman real-sim 0.88 / sim-sim 0.91
+  S/N >= 25 (headline)                       n_sim  9683 n_real   793  real FPR 0.014 [0.001, 0.040] PASS  twin Spearman real-sim 0.76 / sim-sim 0.87
+  S/N 10-25, overlap < 0.86                  n_sim  5103 n_real  1348  real FPR 0.004 [0.000, 0.012] PASS  twin Spearman real-sim 0.68 / sim-sim 0.79
+  S/N 10-25, overlap >= 0.86                 n_sim  5214 n_real  1446  real FPR 0.007 [0.001, 0.014] PASS  twin Spearman real-sim 0.73 / sim-sim 0.78
+  S/N 25-50, overlap < 0.86                  n_sim  3867 n_real   356  real FPR 0.006 [0.000, 0.029] PASS  twin Spearman real-sim 0.73 / sim-sim 0.89
+  S/N 25-50, overlap >= 0.86                 n_sim  3868 n_real   352  real FPR 0.014 [0.000, 0.050] PASS  twin Spearman real-sim 0.74 / sim-sim 0.84
+  S/N 50-inf, overlap < 0.86                 n_sim   928 n_real    32  real FPR 0.000 [0.000, 0.000] PASS  twin Spearman real-sim 0.93 / sim-sim 0.97
+  S/N 50-inf, overlap >= 0.86                n_sim  1020 n_real    53  real FPR 0.038 [0.000, 0.167] FAIL  twin Spearman real-sim 0.86 / sim-sim 0.89
+
+m6:m6_s0|LvU
+  S/N 10-25                                  n_sim 10317 n_real  2794  real FPR 0.006 [0.001, 0.013] PASS  twin Spearman real-sim 0.71 / sim-sim 0.79
+  S/N 25-50                                  n_sim  7735 n_real   708  real FPR 0.013 [0.001, 0.033] PASS  twin Spearman real-sim 0.76 / sim-sim 0.87
+  S/N 50-inf                                 n_sim  1948 n_real    85  real FPR 0.024 [0.000, 0.119] FAIL  twin Spearman real-sim 0.88 / sim-sim 0.91
+  S/N >= 25 (headline)                       n_sim  9683 n_real   793  real FPR 0.014 [0.002, 0.037] PASS  twin Spearman real-sim 0.78 / sim-sim 0.88
+  S/N 10-25, overlap < 0.86                  n_sim  5103 n_real  1348  real FPR 0.006 [0.000, 0.016] PASS  twin Spearman real-sim 0.68 / sim-sim 0.80
+  S/N 10-25, overlap >= 0.86                 n_sim  5214 n_real  1446  real FPR 0.007 [0.000, 0.016] PASS  twin Spearman real-sim 0.74 / sim-sim 0.78
+  S/N 25-50, overlap < 0.86                  n_sim  3867 n_real   356  real FPR 0.011 [0.000, 0.036] PASS  twin Spearman real-sim 0.77 / sim-sim 0.89
+  S/N 25-50, overlap >= 0.86                 n_sim  3868 n_real   352  real FPR 0.014 [0.000, 0.050] PASS  twin Spearman real-sim 0.75 / sim-sim 0.84
+  S/N 50-inf, overlap < 0.86                 n_sim   928 n_real    32  real FPR 0.000 [0.000, 0.000] PASS  twin Spearman real-sim 0.90 / sim-sim 0.94
+  S/N 50-inf, overlap >= 0.86                n_sim  1020 n_real    53  real FPR 0.038 [0.000, 0.167] FAIL  twin Spearman real-sim 0.87 / sim-sim 0.90
+
+headline (S/N >= 25) verdicts: b1_blk1 PASS, b1_blk4 PASS, b1_blk16 PASS, b2_blk1 PASS, b2_blk4 PASS, b2_blk16 PASS, b3_gbm PASS, m6:m6_s0 PASS, m6:m6_s0|LvU PASS

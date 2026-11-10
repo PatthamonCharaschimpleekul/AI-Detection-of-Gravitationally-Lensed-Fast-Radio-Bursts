@@ -1,0 +1,39 @@
+preproc ready 15:54
+cache FAILED
+restart 18:52 after cache network failure (retries 6 -> 20)
+preproc ready 18:52
+cache ready 19:53
+hashes: val hash OK val_bright hash OK dev fold 0 hash OK dev fold 1 hash OK dev fold 2 hash OK dev fold 3 hash OK dev fold 4 hash OK 
+start m6_s0 19:58
+restart 20:00 after DataLoader MemoryError (workers 10 -> 4)
+preproc ready 20:00
+cache ready 20:00
+hashes: val hash OK val_bright hash OK dev fold 0 hash OK dev fold 1 hash OK dev fold 2 hash OK dev fold 3 hash OK dev fold 4 hash OK 
+start m6_s0 20:00
+end m6_s0 20:32 best val recall 0.668
+start stage3 20:32
+end stage3 20:38
+start m6_s0_noalign 20:38
+end m6_s0_noalign 21:09 best val recall 0.576
+start m6_s0_hardneg 21:09
+end m6_s0_hardneg 21:47 best val recall 0.714
+start m6_s0_noimp 21:47
+end m6_s0_noimp 22:18 best val recall 0.470
+queue finished 22:18
+start m6_s1 22:20
+end m6_s1 22:51 best val recall 0.649
+start m6_s1_noalign 22:51
+end m6_s1_noalign 23:17 best val recall 0.552
+start m6_s1_noimp 23:17
+end m6_s1_noimp 23:48 best val recall 0.480
+start m6_s1_hardneg 23:48
+end m6_s1_hardneg 00:21 best val recall 0.689
+start m6_s2 00:21
+end m6_s2 00:53 best val recall 0.616
+start m6_s2_noalign 00:53
+end m6_s2_noalign 01:19 best val recall 0.544
+start m6_s2_noimp 01:19
+end m6_s2_noimp 01:50 best val recall 0.471
+start m6_s2_hardneg 01:50
+end m6_s2_hardneg 02:23 best val recall 0.690
+stage4 seeds finished 02:23

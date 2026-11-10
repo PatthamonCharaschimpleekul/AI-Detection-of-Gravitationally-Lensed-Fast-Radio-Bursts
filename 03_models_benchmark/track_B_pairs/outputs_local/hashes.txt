@@ -1,0 +1,7 @@
+val hash OK
+val_bright hash OK
+dev fold 0 hash OK
+dev fold 1 hash OK
+dev fold 2 hash OK
+dev fold 3 hash OK
+dev fold 4 hash OK
