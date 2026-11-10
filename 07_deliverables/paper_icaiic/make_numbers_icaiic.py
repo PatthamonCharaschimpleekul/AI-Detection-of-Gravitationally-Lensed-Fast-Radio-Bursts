@@ -2,6 +2,7 @@
 Team results quoted from update 2026-11-09_1520 (addendum) and 2026-11-10_1130; second-machine reproductions are read from
 outputs. Usage: python make_numbers_icaiic.py"""
 import re
+import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -41,8 +42,18 @@ def main():
                                  f"[{m.group(5)}, {m.group(6)}]." if m else r"\pending{parse realburst.txt}")
     else:
         out["RealBurstRepro"] = r"\pending{second-machine real-burst reproduction running}"
+    # Compact forecast rows (CHIME vs all-sky, Catalog 2 and 10 yr, without/with magnification bias).
+    sys.path.insert(0, str(HERE.parent / "paper"))
+    from make_numbers import sci, track_c
+    rows = []
+    for lab, tag in (("Catalog 2, as observed", ""), (r"Catalog 2, $\gamma=1.5$", "_bias15"), ("10-yr survey", "_10yr"),
+                     (r"10-yr survey, $\gamma=1.5$", "_10yr_bias15")):
+        d = track_c(tag)
+        if d:
+            rows.append(f"{lab} & {sci(d['chime'])} & {sci(d['chime_echo'])} & {sci(d['allsky'])} \\\\")
+    out["ForecastCompact"] = "\n".join(rows) if rows else r"\pending{forecast}"
     keys = ["SthreeNpairs", "SthreeTeamMsix", "AblNoalignR", "AblNoalignD", "AblNoimpR", "AblNoimpD", "AblHardnegR",
-            "AblHardnegD", "SthreeRepro", "RealBurstRepro"]
+            "AblHardnegD", "SthreeRepro", "RealBurstRepro", "ForecastCompact"]
     (HERE / "numbers_icaiic.tex").write_text("".join(f"\\newcommand{{\\{k}}}{{{out.get(k, rf'\pending{{{k}}}')}}}\n" for k in keys))
     print((HERE / "numbers_icaiic.tex").read_text())
 

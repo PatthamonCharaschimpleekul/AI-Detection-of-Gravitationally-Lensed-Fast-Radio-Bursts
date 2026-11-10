@@ -1,235 +1,277 @@
-\documentclass[conference,a4paper]{IEEEtran}
+% ICAIIC 2027 submission. Built on the IEEE conference template (IEEEtran.cls v1.8b, bare_conf.tex structure).
+\documentclass[conference]{IEEEtran}
 \IEEEoverridecommandlockouts
+% The preceding line is only needed to identify funding in the first footnote. If that is unneeded, please comment it out.
 \usepackage{cite}
-\usepackage{amsmath,amssymb}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
 \usepackage{graphicx}
-\usepackage{booktabs}
+\usepackage{textcomp}
 \usepackage{xcolor}
-\usepackage{tikz}
-\usetikzlibrary{positioning,arrows.meta,fit,calc}
-\graphicspath{{../paper/}{./}}
+\usepackage{booktabs}
+\graphicspath{{./}{../paper/}}
 \newcommand{\pending}[1]{\textcolor{red}{[#1]}}
 \input{../paper/numbers}
 \input{numbers_icaiic}
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
 
 \begin{document}
 
-\title{Siamese Correlation Networks for Identifying Gravitationally Lensed Fast Radio Bursts: Real-Data Validation and the Limits Set by Survey Geometry}
+\title{Learning to Recognise Gravitationally Lensed Fast Radio Bursts Without Real Positives: A Siamese Correlation Network,
+Real-Data Validation and Survey-Geometry Limits}
 
 \author{\IEEEauthorblockN{Author names withheld for review}
-\IEEEauthorblockA{Affiliations to be added}}
+\IEEEauthorblockA{\textit{Department} \\
+\textit{Organization}\\
+City, Country \\
+email address or ORCID}
+}
 
 \maketitle
 
 \begin{abstract}
-A fast radio burst (FRB) lensed by a foreground galaxy would reach Earth twice, days to months apart, with the two copies
-differing only by propagation effects. Recognising such copies among the thousands of bursts from repeating sources is a
-pairwise verification problem with no real positive examples. We build a semi-synthetic benchmark from all 981 public
-dynamic spectra of the 83 repeating sources in the CHIME/FRB Catalog~2, with real noise, measured signal-to-noise ratios and
-\emph{impostor} pairs of different bursts that share a propagation imprint. A 259k-parameter Siamese encoder that aligns two
-feature maps with a differentiable correlation layer before fusing them recovers \RecallMsixOOF\ of lensed pairs at 1\%
-false-positive rate in source-grouped cross-validation, against \RecallGBMOOF\ for the best physics- or feature-based
-baseline. Ablations over three seeds show that both the alignment layer and impostor training are needed. Because no real
-lensed pair exists, we validate on real data in three ways: real cross-source pairs serve as true negatives, scored against
-per-pair simulated twins; two copies of a real burst stand in for lensed pairs; and the whole pipeline is reproduced on a
-second machine. Finally, we show that survey geometry, not the classifier, limits discovery: a transit telescope records the
-copies of a repeater's bursts only for the \PalignMedian\ of lenses whose delay is close to a whole number of sidereal days,
-so an all-sky monitor would find about \GainAllSky$\times$ more lensed repeaters than CHIME from the same sources.
+A fast radio burst (FRB) lensed by a foreground galaxy reaches Earth twice, days to months apart, and the two copies differ
+only by propagation effects. Recognising such copies among the bursts of repeating sources is a pairwise verification
+problem with three difficulties: no real positive example exists, the negatives include adversarial \emph{impostors} that
+share a propagation imprint, and decisions must hold at a 1\% false-positive rate. We build a semi-synthetic benchmark from
+all 981 public dynamic spectra of the 83 repeating sources in the CHIME/FRB Catalog~2, and propose a 259k-parameter Siamese
+network that aligns the two bursts' feature maps with a differentiable correlation layer before fusing them. In
+source-grouped cross-validation it recovers \RecallMsixOOF\ of lensed pairs at 1\% false-positive rate, against
+\RecallGBMOOF\ for the best physics- or feature-based baseline, and ablations over three seeds show that both alignment and
+impostor training are needed. Because the positive class has no real counterpart, we validate on real data in three ways:
+real cross-source pairs serve as true negatives scored against per-pair simulated twins (false-positive rate 0.8--1.5\%,
+within a pre-registered 2\% limit), two copies of a real burst stand in for a lensed pair (recall ratio 0.96--0.97 to
+template copies), and the whole pipeline is reproduced on a second machine. Finally, we show that survey geometry, not
+the classifier, limits discovery: a transit telescope records both copies for only \PalignMedian\ of lenses, and an all-sky
+monitor would find about \GainAllSky$\times$ more lensed repeaters from the same sources.
 \end{abstract}
 
 \begin{IEEEkeywords}
-Siamese networks, pairwise verification, simulation-to-real transfer, signal processing, radio astronomy, gravitational lensing
+Siamese networks, pairwise verification, simulation-to-real transfer, deep learning for signal processing, radio astronomy
 \end{IEEEkeywords}
 
 \section{Introduction}
-Fast radio bursts are millisecond radio flashes from distant galaxies; some sources repeat thousands of times. If a galaxy
-lies close to the line of sight, gravitational lensing produces two images of the source, and every burst then arrives twice,
-separated by a fixed delay of days to months~\cite{Li2018,Wucknitz2021}. A confirmed lensed FRB would measure the Hubble
-constant and test dark-matter models, but none is known~\cite{Chang2024,Kader2022,Leung2022,Krochek2022}.
+Fast radio bursts are millisecond radio flashes from distant galaxies, and some sources repeat thousands of times. When a
+galaxy lies close to the line of sight, gravitational lensing forms two images of the source, so every burst arrives twice,
+separated by a fixed delay $\Delta t$ of days to months (Fig.~\ref{fig:concept}a). A confirmed lensed FRB would measure the
+expansion rate of the Universe and test dark-matter models~\cite{Li2018,Wucknitz2021}, but none has been
+found~\cite{Chang2024,Kader2022,Leung2022,Krochek2022}.
 
-Finding one is a pairwise verification problem: given two bursts from the same sky position, are they two copies of one
-burst, or two different bursts from the same repeating source? This is hard for three reasons. There are no real positive
-examples, so any classifier is trained on simulation and must be validated on real data without labels. The negatives are
-adversarial: different bursts of one source can share a spectral envelope imposed by plasma lensing, or a scintillation
-pattern, and look like copies. And the decision must hold at very low false-positive rates, because the prior probability of
-lensing is about $10^{-3}$ per source.
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{fig_concept.pdf}
+\caption{The problem. (a) A galaxy lens sends every burst of a repeating FRB along two paths; the copy arrives a fixed
+$\Delta t$ later, fainter, with its own scintillation and scattering. The dynamic spectra show one burst sweeping from 800 to
+400\,MHz (the $\nu^{-2}$ dispersion delay), computed from the cold-plasma law. (b) A transit telescope such as CHIME records
+a source only within minutes of transit, so the copies of recorded bursts are recorded only if $\Delta t$ is close to a whole
+number of sidereal days.}
+\label{fig:concept}
+\end{figure*}
 
-Lensed-pair classifiers exist for gravitational waves~\cite{Goyal2021,Zhang2026}, where Siamese networks fuse paired
-features by their absolute difference and product. FRB lensing searches have so far used auto- and cross-correlation
-statistics~\cite{Kader2022,Chang2024}. Our contributions are:
+Finding one is a pairwise verification problem: are two bursts from the same sky position two copies of one burst, or two
+different bursts of a repeating source? Three properties make it hard. \emph{No real positives:} any detector is trained on
+simulation, and its transfer to real data must be checked without labelled positives. \emph{Adversarial negatives:} distinct
+bursts of one source can share a spectral envelope imposed by a plasma lens, or a scintillation pattern, and resemble copies.
+\emph{Low operating point:} the prior probability of lensing is about $10^{-3}$ per source, so decisions must hold at 1\%
+false-positive rate or below.
+
+This paper makes four contributions (Fig.~\ref{fig:workflow}):
 \begin{enumerate}
-\item a semi-synthetic pair benchmark built from all public CHIME/FRB Catalog~2 repeater spectra, with impostor negatives and
-frozen, hash-checked evaluation sets (Section~\ref{sec:data});
-\item a Siamese correlation network that aligns feature maps before fusing them, with an ablation study (Sections~\ref{sec:method}, \ref{sec:results});
-\item a validation protocol for a detector without real positives: true-negative transfer with per-pair twins, a real-burst
-positive proxy, and an independent reproduction (Section~\ref{sec:validation});
-\item an analysis of where such a detector can work, which shows that transit telescopes rarely record both copies and that
-sky coverage, not classifier accuracy, limits discovery (Section~\ref{sec:geometry}).
+\item a semi-synthetic pair benchmark built from all public CHIME/FRB Catalog~2 repeater spectra, with impostor negatives
+and frozen, hash-checked evaluation sets;
+\item a Siamese correlation network that aligns feature maps before comparing them, with an ablation study over three seeds;
+\item a validation protocol for a detector without real positives, combining true-negative transfer with per-pair twins,
+a real-burst positive proxy and an independent reproduction;
+\item an analysis of where such a detector can work, showing that transit telescopes rarely record both copies and that sky
+coverage, not classifier accuracy, limits discovery.
 \end{enumerate}
 
 \section{Related Work}
-\textbf{Siamese verification.} Siamese networks decide whether two inputs share an identity by comparing embeddings from one
+\textbf{Siamese verification.} Siamese networks decide whether two inputs share an identity by comparing the outputs of one
 shared encoder, from signature verification~\cite{Bromley1993} to one-shot recognition~\cite{Koch2015}. Most compare global
-vectors, which discards the relative position of features; our classic Siamese baseline (5) is of this kind. Correlation
-layers that compare feature maps over a range of displacements were introduced for optical flow~\cite{Dosovitskiy2015}; we
-use one to estimate and remove the residual time shift between two bursts before comparison.
+embedding vectors, which discards where features occur; our classic Siamese baseline is of this kind. Correlation layers that
+compare feature maps over a range of displacements were introduced for optical flow~\cite{Dosovitskiy2015}; we use one to
+estimate and remove the residual time offset between two bursts before comparing them.
 
 \textbf{Lensed-pair identification.} For gravitational waves, lensed event pairs have been identified with a DenseNet and
-gradient boosting~\cite{Goyal2021} and with a Siamese residual network that fuses features by absolute difference and
-product~\cite{Zhang2026}; the latter notes the need for adaptation to real detector data. For FRBs, lensing searches have
-used auto- and cross-correlation statistics~\cite{Kader2022,Chang2024,Krochek2022}, and machine learning has been used to
-classify repeating from non-repeating sources~\cite{Chen2022}, not to identify lensed copies.
+gradient boosting~\cite{Goyal2021}, and with a Siamese residual network that fuses features by absolute difference and
+product~\cite{Zhang2026}, which notes the need to adapt to real detector data. FRB lensing searches have used auto- and
+cross-correlation statistics~\cite{Kader2022,Chang2024,Krochek2022}, and machine learning on FRBs has separated repeating from
+non-repeating sources~\cite{Chen2022}; to our knowledge no learned detector of lensed FRB copies exists.
 
-\textbf{Simulation-to-real transfer.} Detectors trained on simulation are commonly made robust by randomising nuisances
-during training~\cite{Tobin2017}. Without real positives, transfer must also be checked on real data; we do so with real
-negatives, per-pair twins and a real-signal positive proxy.
+\textbf{Simulation-to-real transfer.} Detectors trained on simulation are made robust by randomising nuisances during
+training~\cite{Tobin2017}, but robustness still has to be shown on real data. Without real positives, we check transfer on
+real negatives, per-pair simulated twins and a real-signal positive proxy.
 
-\section{Data and Benchmark}
+\section{Problem Formulation}
+\label{sec:problem}
+A burst is a dynamic spectrum $X\in\mathbb{R}^{F\times T}$ with $F=256$ frequency channels and $T=160$ time samples of
+0.983\,ms, normalised to unit off-pulse noise. A pair $(A,B)$ of bursts from one sky position has a label
+$y\in\{\textsc{l},\textsc{r},\textsc{u},\textsc{i}\}$: lensed copies, repeat (two bursts of one source), unrelated (two
+sources) or impostor (two bursts of one source sharing a propagation imprint). A detector outputs a symmetric score
+$s(A,B)=s(B,A)$, and a pair is flagged if $s>\tau_\alpha$, where $\tau_\alpha$ is the $(1-\alpha)$ quantile of $s$ over
+negatives. The primary metric is
+\begin{equation}
+\mathrm{Recall}@\alpha=\Pr\!\left[s(A,B)>\tau_\alpha \mid y=\textsc{l}\right],\quad \alpha=1\%,
+\label{eq:metric}
+\end{equation}
+with negatives $\{\textsc{r},\textsc{i}\}$, the alternatives that a real search faces within one source. Pairs share
+sources, so we report 95\% intervals from a bootstrap over sources that recomputes $\tau_\alpha$ in every resample. The
+validation constraint is that no real pair with $y=\textsc{l}$ is available: real data can only supply negatives.
+
+\section{Benchmark Construction}
 \label{sec:data}
-\textbf{Real inputs.} We use the Stokes-I dynamic spectra of all 981 bursts of the 83 repeating sources in CHIME/FRB
-Catalog~2~\cite{CHIME2025cat2}, at 0.983\,ms and 400--800\,MHz. Each burst is binned to 256 frequency channels $\times$ 160
-time samples around the emission and normalised by its off-pulse noise. The catalogue's fitted burst models serve as
-noise-free templates (950 eligible), and off-pulse columns of each file, mirror-tiled, serve as real backgrounds (856).
-
-\textbf{Pair classes.} A \emph{lensed} pair places one template twice; a \emph{repeat} pair places two templates of one
-source; an \emph{unrelated} pair takes templates of two sources; an \emph{impostor} pair is a repeat pair that shares a
-propagation imprint: member B inherits member A's 25-MHz-smoothed spectral envelope (I1, mimicking a plasma lens), both share
-one scintillation pattern (I2), or both. Each member is injected at a measured matched-filter S/N on a different real
-background, with its own time shift ($\pm10$ samples), residual dispersion, scattering and scintillation, so that only
-burst identity separates lensed from repeat pairs. Single-member statistics cannot tell the classes apart (probe AUC
-$\le0.53$).
-
 \begin{figure*}[t]
 \centering
-\includegraphics[width=\textwidth]{fig_examples.pdf}
-\caption{One validation pair of each class at similar S/N (rows: members A and B; white rows: masked radio-frequency
-interference). A lensed pair repeats one burst on different real backgrounds with independent nuisances; a repeat pair shows
-two bursts of one source; an impostor pair shows two bursts of one source where B inherits A's spectral envelope, mimicking a
-plasma lens; an unrelated pair comes from two sources. The detector must separate the first column from the other three at a
-1\% false-positive rate.}
-\label{fig:examples}
+\includegraphics[width=\textwidth]{fig_workflow.pdf}
+\caption{Workflow. (1) Real CHIME/FRB Catalog~2 dynamic spectra (tiles: real bright bursts) provide noise-free templates
+and real noise backgrounds. (2) The pair simulator places templates on different real backgrounds with independent
+nuisances to make four classes; impostors share a spectral envelope or scintillation pattern. (3) The Siamese correlation
+network scores each pair. (4) Validation uses only real negatives, a real-burst proxy and an independent rerun.
+(5) Survey-geometry analysis decides where the detector can be deployed.}
+\label{fig:workflow}
 \end{figure*}
 
-\textbf{Splits and frozen sets.} Sources are split 60/20/20 into train, validation and test. Validation and test sets of 4000
-pairs, and ``bright'' sets with pair minimum S/N\,$\ge25$ (the pre-registered headline bin), are regenerated from fixed seeds
-and checked against stored SHA-256 hashes. The test split stays sealed under a pre-registered blind protocol; all numbers
-below are development results on sources never used for training.
+\textbf{Real inputs.} We use the Stokes-I dynamic spectra of all 981 bursts of the 83 repeating sources in CHIME/FRB
+Catalog~2~\cite{CHIME2025cat2} (400--800\,MHz). Each burst is binned to $256\times160$ around its emission and normalised by
+its off-pulse noise. The catalogue's fitted burst models serve as noise-free templates (950 usable), and the off-pulse
+columns of each file, mirror-tiled, serve as real noise backgrounds (856), each with its own channel mask.
 
-\textbf{Metric.} Recall of lensed pairs at 1\% false-positive rate against repeat and impostor pairs, with 95\% intervals
-from a source-level bootstrap that recomputes the threshold in every resample.
+\textbf{Pair classes.} A lensed pair places one template twice; a repeat pair, two templates of one source; an unrelated
+pair, templates of two sources. An impostor pair is a repeat pair in which member B inherits member A's
+25-MHz-smoothed spectral envelope (I1, mimicking a plasma lens), both members share one scintillation pattern (I2), or both.
+Each member is injected at a measured matched-filter signal-to-noise ratio (S/N) on a different real background, with its
+own time shift ($\pm10$ samples), residual dispersion, scattering and scintillation, so that only burst identity separates
+lensed from repeat pairs. Probes on single-member statistics cannot tell the classes apart (AUC $\le0.53$).
 
-\section{Method}
+\textbf{Splits and frozen sets.} Sources are split 60/20/20 into train, validation and test. Validation and test sets of
+4000 pairs, and ``bright'' sets with pair minimum S/N\,$\ge25$ (the pre-registered headline bin), are regenerated from fixed
+seeds and checked against stored SHA-256 hashes. The test split stays sealed under a pre-registered blind protocol; all
+numbers below are development results on sources never used in training.
+
+\section{Siamese Correlation Network}
 \label{sec:method}
 \begin{figure*}[t]
 \centering
-\begin{tikzpicture}[font=\footnotesize, node distance=4mm and 6mm,
-  box/.style={draw, rounded corners=2pt, align=center, minimum height=9mm, minimum width=16mm, inner sep=3pt, fill=#1},
-  box/.default=white, ar/.style={-{Latex[length=2mm]}, semithick}]
-\node[box=blue!8] (a) {burst A\\$256\times160$};
-\node[box=blue!8, below=of a] (b) {burst B\\$256\times160$};
-\node[box=gray!12, right=of a] (ea) {asinh +\\encoder $g$};
-\node[box=gray!12, right=of b] (eb) {asinh +\\encoder $g$};
-\coordinate (mid) at ($(ea.east)!0.5!(eb.east)$);
-\node[box=orange!15, right=9mm of mid] (corr) {correlation layer\\$\rho(\ell)$, $|\ell|\le24$ samples};
-\node[box=orange!15, right=of corr] (al) {soft alignment\\$\tilde g_B=\sum_\ell w_\ell\, g_B(\ell)$\\$w_\ell\propto e^{\beta\rho(\ell)}$};
-\node[box=green!12, right=of al] (fu) {fusion\\$|g_A-\tilde g_B|$,\ $g_A\odot\tilde g_B$};
-\node[box=gray!12, right=of fu] (hd) {2 conv + pool\\MLP $\to$ 4 logits};
-\draw[ar] (a) -- (ea); \draw[ar] (b) -- (eb);
-\draw[ar] (ea.east) -- (corr.west); \draw[ar] (eb.east) -- (corr.west);
-\draw[ar] (corr) -- (al); \draw[ar] (al) -- (fu); \draw[ar] (fu) -- (hd);
-\draw[ar, dashed] (corr.south) -- ++(0,-7mm) -| node[pos=0.25, below]{correlation profile $\rho$} (hd.south);
-\draw[dotted, semithick] (ea.south) -- node[left, font=\scriptsize, xshift=-1mm]{shared} (eb.north);
-\end{tikzpicture}
-\caption{Model 6, the Siamese correlation network. A weight-shared encoder maps each burst to a $64\times16\times80$
-feature map at two-sample time resolution; a correlation layer over $\pm24$ samples measures the residual delay and softly
-aligns B to A with a learned temperature $\beta$; the aligned maps are fused by absolute difference and product. The
-correlation profile also feeds the head. Both directions are computed and averaged, so the score is symmetric in A and B.}
+\includegraphics[width=\textwidth]{fig_arch.pdf}
+\caption{Model 6. A weight-shared encoder maps each burst to a $64\times16\times80$ feature map at two-sample time
+resolution. The correlation layer measures the normalised correlation $\rho(\ell)$ over lags of $\pm24$ samples (curve:
+computed for the pair shown), softmax weights align $g_B$ to $g_A$, and the aligned maps are fused by absolute difference
+and product. The correlation profile also feeds the head. Both directions are computed and averaged.}
 \label{fig:arch}
 \end{figure*}
 
-\textbf{Benchmark ladder.} All methods score the same pairs, averaged over both member orders:
-(1)~normalised cross-correlation in the on-pulse box, maximised over $\pm24$ lags, with 1, 4 or 16 channel blocks;
-(2)~a physics statistic that fits one member to the other over scattering time, residual dispersion, lag and amplitude;
-(3)~gradient-boosted trees (GBM) on seven measured burst properties per member (best of 1--3, the comparator);
-(4)~a two-channel CNN; (5)~a classic Siamese network comparing vector embeddings;
-(6)~our Siamese correlation network (Fig.~\ref{fig:arch}); and (7)~cross-attention between time--frequency patches.
+\textbf{Encoder.} Inputs pass through $\mathrm{asinh}$ to compress the dynamic range of bright bursts. A shared encoder $g$ of
+four $5\times3$ convolution blocks with group normalisation maps $X$ to $g(X)\in\mathbb{R}^{C\times F'\times T'}$ with $C=64$,
+$F'=16$ and $T'=80$, keeping two-sample time resolution because lensed copies differ by residual time offsets.
 
-\textbf{Model 6.} Inputs pass through $\mathrm{asinh}$ to compress the dynamic range. The encoder $g$ has four
-$5\times3$ convolution blocks with group normalisation, reducing $256\times160$ to $64$ channels $\times\,16\times80$ while
-keeping two-sample time resolution, because lensed copies differ by residual time shifts. The correlation layer computes the
-normalised correlation $\rho(\ell)$ of the two maps over lags $|\ell|\le12$ encoder steps ($\pm24$ samples), forms softmax
-weights $w_\ell\propto\exp(\beta\rho(\ell))$ with learned $\beta$, and aligns $g_B$ as $\sum_\ell w_\ell\,g_B(\ell)$.
-Fusion concatenates $|g_A-g_B|$ and $g_A\odot g_B$, two convolution blocks and mean/max pooling follow, and an MLP receives the
-pooled features with $\rho$. The model has 259k parameters.
+\textbf{Correlation and soft alignment.} For lags $\ell\in\{-L,\dots,L\}$ with $L=12$ encoder steps ($\pm24$ samples),
+\begin{equation}
+\rho(\ell)=\frac{\langle \bar g_A,\ \bar g_B(\ell)\rangle}{\lVert \bar g_A\rVert\,\lVert \bar g_B(\ell)\rVert},\qquad
+w_\ell=\frac{e^{\beta\rho(\ell)}}{\sum_{k}e^{\beta\rho(k)}},
+\label{eq:corr}
+\end{equation}
+where $g_B(\ell)$ is $g_B$ shifted by $\ell$ in time, the bar denotes removal of the time mean, and $\beta$ is learned. The
+aligned map is $\tilde g_B=\sum_\ell w_\ell\, g_B(\ell)$; this is a differentiable estimate of the residual delay that the
+network can sharpen or soften.
 
-\textbf{Training.} All learned models are trained for 20\,000 steps of 64 pairs generated on the fly from training sources
-(half with S/N floor 10, half 25), with four-class cross-entropy, AdamW (learning rate $10^{-3}$, weight decay $10^{-4}$),
-1000 warm-up steps and cosine decay; the checkpoint is selected on the validation bright set. The lensed score is the
-log-odds of the lensed class against the other three.
+\textbf{Fusion and head.} The fused map $[\,|g_A-\tilde g_B|,\ g_A\odot\tilde g_B\,]$ passes two convolution blocks and
+mean and max pooling; an MLP receives the pooled features together with $\rho$ and outputs four logits $z$. The lensed score
+is the log-odds against the other classes, and symmetry is enforced by averaging both directions:
+\begin{equation}
+s(A,B)=\tfrac12\left[\sigma(A,B)+\sigma(B,A)\right],\quad \sigma=z_{\textsc{l}}-\log\!\sum_{c\neq\textsc{l}}e^{z_c}.
+\label{eq:score}
+\end{equation}
+The model has 259k parameters.
+
+\textbf{Training.} All learned models are trained for 20\,000 steps of 64 pairs drawn on the fly from training sources (half
+with S/N floor 10, half 25), with four-class cross-entropy, AdamW (learning rate $10^{-3}$, weight decay $10^{-4}$), 1000
+warm-up steps and cosine decay; the checkpoint is selected on the validation bright set.
 
 \section{Validation Without Real Positives}
 \label{sec:validation}
 \textbf{Grouped folds.} Because the validation interval was wide, a pre-registered rule moved the primary comparison to five
-source-grouped folds: each source is scored by a model that never saw it.
+source-grouped folds, in which every source is scored by a model that never saw it.
 
 \textbf{True-negative transfer.} Two bursts from different sources cannot be lensed copies, so real cross-source pairs are
-labelled negatives that can be scored without breaking the blind protocol. For each such pair we simulate five
-\emph{twins} from the same two templates at their measured S/N, and set the threshold at the twins' 99th percentile; the
-pre-registered criterion is a real false-positive rate of at most 2\%. Twin matching matters: with a threshold from
-generic simulated pairs, cross-correlation appears to fail below S/N\,25 (real rate \BoneLowReal\ for its three variants),
-yet its twins fail just as often (\BoneLowTwin) because the real pairs there are brighter than generic ones (median S/N
-\SnrLowReal\ vs \SnrLowSim). The ``failure'' is sample composition, not a simulation gap.
+labelled negatives that can be scored without breaking the blind protocol. For each real pair we simulate five
+\emph{twins} from the same two templates at their measured S/N and set $\tau$ at the twins' 99th percentile; the
+pre-registered criterion is a real false-positive rate of at most 2\% per S/N bin. Twin matching is essential: with a
+threshold from generic simulated pairs, cross-correlation appears to fail below S/N\,25 (real rate \BoneLowReal\ for three
+variants), yet its twins fail as often (\BoneLowTwin) because those real pairs are brighter than generic ones (median S/N
+\SnrLowReal\ vs \SnrLowSim). The apparent failure is sample composition, not a simulation gap.
 
-\textbf{Real-burst positives.} As a stand-in for lensed pairs, two copies of a real burst's cutout, with its fine structure,
-are injected with independent nuisances on different backgrounds, alongside template copies and noise-only copies made with
-the same random draws.
+\textbf{Real-burst positives.} As a proxy for lensed pairs, two copies of a real burst's cutout, with its fine structure
+and real noise, are injected with independent nuisances on different backgrounds, alongside template copies and
+noise-only copies drawn with the same random numbers.
 
-\textbf{Reproduction.} A second machine re-downloaded and re-processed all 981 spectra, rebuilt the injection cache and
-regenerated the frozen sets, then retrained model 6 and repeated the checks.
+\textbf{Reproduction.} A second machine re-downloaded and re-processed all 981 spectra, rebuilt the injection cache,
+regenerated the frozen sets, retrained model 6 with three seeds and reran the checks.
 
-\section{Results}
+\section{Experiments}
 \label{sec:results}
+\textbf{Baselines.} All methods score the same pairs, averaged over both member orders: (1)~normalised cross-correlation in
+the on-pulse box, maximised over $\pm24$ lags, with 16 channel blocks; (2)~a physics statistic that fits one member to the
+other over scattering time, residual dispersion, lag and amplitude; (3)~gradient-boosted trees (GBM) on seven measured burst
+properties per member, the best of 1--3 and the pre-registered comparator; (4)~a two-channel CNN; (5)~a classic Siamese
+network comparing embedding vectors; and (7)~cross-attention between time--frequency patches.
+
 \begin{table}[t]
-\caption{Recall at 1\% FPR, lensed vs repeat + impostor, S/N\,$\ge25$, validation sources (95\% source bootstrap).}
+\caption{Recall at 1\% FPR (lensed vs repeat + impostor), S/N\,$\ge25$, validation sources; 95\% source bootstrap.}
 \label{tab:main}
 \centering
-\setlength{\tabcolsep}{2pt}
+\setlength{\tabcolsep}{2.5pt}
 \resizebox{\columnwidth}{!}{%
-\begin{tabular}{lcc}
+\begin{tabular}{lccc}
 \toprule
-Method & Fixed split (3 seeds) & Grouped folds (OOF) \\
+Method & Fixed split (3 seeds) & Grouped folds (OOF) & AUC \\
 \midrule
-(1) Cross-correlation, 16 blocks & 0.171 [0.115, 0.245] & -- \\
-(2) Physics fit, 16 blocks & 0.164 [0.119, 0.235] & -- \\
-(3) Feature GBM & 0.285 [0.180, 0.401] & 0.246 [0.199, 0.297] \\
-(4) Two-channel CNN & 0.423 / 0.409 / 0.407 & -- \\
-(5) Classic Siamese & 0.500 / 0.559 / 0.541 & -- \\
-(7) Cross-attention & 0.471 / 0.013$^a$ / 0.579 & -- \\
-(6) Ours & \textbf{0.701 / 0.698 / 0.684} & \textbf{0.467 [0.253, 0.662]} \\
+(1) Cross-correlation & 0.171 [0.115, 0.245] & -- & 0.885 \\
+(2) Physics fit & 0.164 [0.119, 0.235] & -- & 0.931 \\
+(3) Feature GBM & 0.285 [0.180, 0.401] & 0.246 [0.199, 0.297] & 0.928 \\
+(4) Two-channel CNN & 0.423 / 0.409 / 0.407 & -- & 0.959 \\
+(5) Classic Siamese & 0.500 / 0.559 / 0.541 & -- & 0.976 \\
+(7) Cross-attention & 0.471 / 0.013$^a$ / 0.579 & -- & 0.976 \\
+(6) Ours & \textbf{0.701 / 0.698 / 0.684} & \textbf{0.467 [0.253, 0.662]} & \textbf{0.986} \\
 \midrule
-(6) $-$ (3), paired & +0.394 [+0.226, +0.542] & +0.220 [+0.035, +0.381] \\
-(6) reproduction$^b$ & \ReproSeeds & -- \\
+(6) $-$ (3), paired & +0.394 [+0.226, +0.542] & +0.220 [+0.035, +0.381] & \\
+(6), second machine$^b$ & \ReproSeeds & -- & 0.984--0.987 \\
 \bottomrule
 \end{tabular}}\\[2pt]
-\parbox{\columnwidth}{\footnotesize $^a$Collapsed to a plateau (one of three seeds). $^b$Second machine, different data-loader
-worker count; seed 0 inside the pre-registered range 0.66--0.72, the mean 0.05 below the original seeds.}
+\parbox{\columnwidth}{\footnotesize $^a$One of three seeds collapsed to a plateau. $^b$Different data-loader worker count;
+seed 0 inside the pre-registered range 0.66--0.72, the mean 0.05 below the original seeds. AUC: mean over seeds.}
 \end{table}
 
-\textbf{Benchmark.} Table~\ref{tab:main} shows that every learned model beats the physics and feature baselines, and model 6
-leads all of them, by +0.39 recall over the GBM on the fixed split and +0.22 [+0.04, +0.38] in grouped folds. At the 1\%
-threshold its false positives are almost all I1 impostors, which share a spectral envelope by construction; plain repeats are
-rarely confused. Model 6 classifies 95\% of lensed pairs of unseen sources correctly, while its confusion of repeat and
-unrelated pairs on unseen sources (32\% correct vs 86\% on seen) shows that part of its capacity memorises source identity;
-training variants that remove this incentive are in progress.
+\textbf{Main result.} Every learned model beats the physics and feature baselines, and model 6 leads all of them
+(Table~\ref{tab:main}): +0.39 recall over the GBM on the fixed split and +0.22 [+0.04, +0.38] in grouped folds, where every
+source is unseen. A gap of this size at near-equal AUC (0.976--0.986 for the learned models) shows that the gain lies in the
+low-false-positive tail that a search uses.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{fig_snr.pdf}
+\caption{Recall at 1\% FPR by pair minimum S/N on the frozen validation set (529, 330, 108 and 33 lensed pairs per bin).
+Model 6: mean and range of three seeds from the second machine, checkpoints selected on the separate bright set.}
+\label{fig:snr}
+\end{figure}
+
+\textbf{Sensitivity and errors.} The gain holds at every S/N and is largest in relative terms at the faint end, where model 6
+recovers 0.41 of lensed pairs against 0.12 for the GBM (Fig.~\ref{fig:snr}). At the 1\% threshold, 35--38 of model 6's 40
+false positives are impostors with a shared envelope (I1 or I1+I2), at most one is a scintillation-only impostor and 2--4 are
+plain repeats: the remaining confusion is the physically hardest case by design. Model 6 classifies 95\% of lensed pairs of
+unseen sources correctly, while its confusion of repeat and unrelated pairs on unseen sources (32\% correct against 86\% on
+seen ones) shows that part of its capacity memorises source identity, which does not affect the lensed score.
 
 \begin{table}[t]
-\caption{Ablations of model 6 (three seeds each): seed-mean recall and paired difference from the full model, validation bright set.}
+\caption{Ablations of model 6, three seeds each: seed-mean recall at 1\% FPR and paired difference from the full model
+(validation bright set, 95\% source bootstrap).}
 \label{tab:abl}
 \centering
 \setlength{\tabcolsep}{3pt}
 \begin{tabular}{lcc}
 \toprule
-Variant & Recall & Difference [95\%] \\
+Variant & Recall & Difference \\
 \midrule
 Full model & \AblFull & -- \\
 No alignment (correlation off) & \AblNoalignR & \AblNoalignD \\
@@ -239,91 +281,115 @@ Hard-negative repeats & \AblHardnegR & \AblHardnegD \\
 \end{tabular}
 \end{table}
 
-\begin{figure}[t]
-\centering
-\includegraphics[width=\columnwidth]{fig_snr.pdf}
-\caption{Recall at 1\% FPR by pair minimum S/N on the frozen validation set (529, 330, 108 and 33 lensed pairs per bin).
-Model 6: mean and range of three seeds trained on the second machine, with checkpoints selected on the separate bright
-set. Its largest relative gain is at low S/N, the bin with the most pairs.}
-\label{fig:snr}
-\end{figure}
-
-The gain holds at every S/N (Fig.~\ref{fig:snr}) and is largest in relative terms at the faint end, where model 6
-recovers about 0.41 of lensed pairs against 0.12 for the GBM.
-
 \textbf{Ablations.} Removing the alignment, or training without impostors, lowers recall in every seed
-(Table~\ref{tab:abl}). Without impostors the network mistakes envelope-sharing bursts of one source for copies. Oversampling
+(Table~\ref{tab:abl}); without impostors the network mistakes envelope-sharing bursts of one source for copies. Oversampling
 template-similar repeats helps slightly in every seed, but the interval includes zero, and on a closed-form benchmark this
 scheme biased a learned likelihood ratio low by about 1\,dex, so we do not adopt it without a correction.
 
-\textbf{Transfer to real negatives.} On the \SthreeNpairs\ real cross-source pairs of the validation sources, all 15
-trained models and baselines meet the twin-threshold criterion in both S/N bins once short real windows are filled with
-off-pulse noise like the simulated backgrounds: model 6 reaches \SthreeTeamMsix\ in the headline bin (GBM 0.009), and its real-to-twin rank
-correlation reaches the twin-to-twin ceiling. Before the fill, model 6 flagged pairs whose windows shared the same blank
-edges, a format mismatch that a twin test exposed and the fill removed. \SthreeRepro
+\begin{table}[t]
+\caption{Real-data validation of model 6 on two machines (validation sources; 95\% source bootstrap where given).}
+\label{tab:real}
+\centering
+\setlength{\tabcolsep}{2.5pt}
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{lcc}
+\toprule
+Check (criterion) & Original machine & Second machine \\
+\midrule
+Real FPR at twin threshold, S/N\,$\ge25$ ($\le2\%$) & 1.1 / 1.4 / 0.8\% & 1.5 / 1.3 / 1.0\% \\
+\quad GBM, same check & 0.9\% & 1.0\% \\
+Real--twin rank corr. / twin ceiling & 0.91--0.94 / 0.88--0.91 & 0.91--0.92 / 0.87--0.89 \\
+Real-burst / template recall, S/N 25 ($\ge0.8$) & 0.96 [0.89, 1.06] & 0.97 [0.91, 1.08] \\
+Real-burst / template recall, S/N 40 & 0.99 [0.91, 1.13] & 1.04 [0.97, 1.18] \\
+Noise-only copies flagged ($\le0.05$) & 0.000 & 0.000 \\
+Frozen-set hashes & reference & 7/7 match \\
+\bottomrule
+\end{tabular}}
+\end{table}
 
-\textbf{Real-burst positives.} At injected S/N\,25, model 6 recovers 0.663 of real-burst copies against 0.691 of template
-copies (ratio 0.96 [0.89, 1.06]) and none of the noise-only copies, while the GBM recovers 0.178. The classic Siamese network
-drops to a ratio of 0.72--0.84, so it relies on template smoothness and model 6 does not. \RealBurstRepro
+\textbf{Real-data validation.} On the \SthreeNpairs\ real cross-source pairs of the validation sources, all 15 trained models
+and baselines meet the twin-threshold criterion once short real windows are filled with off-pulse noise like the simulated
+backgrounds, and model 6's real-to-twin rank correlation reaches the twin-to-twin ceiling on both machines
+(Table~\ref{tab:real}). Before the fill, model 6 flagged real pairs whose windows shared the same zero-padded edges; the twin
+test exposed this format mismatch, which the fill removes. Two copies of a real burst, with its fine structure, are recognised
+as often as two copies of its smooth template, and noise-only copies never are, so model 6 does not rely on template
+smoothness or shared noise; the classic Siamese network does (ratio 0.72--0.84).
 
-\section{Where Can Such a Detector Work?}
+\textbf{Efficiency.} Model 6 scores 1149 pairs per second in both orders on one RTX~5070~Ti (bfloat16), so all 78\,701
+same-source pairs of Catalog~2 take about 70\,s.
+
+\section{Survey Geometry: Where Can the Detector Work?}
 \label{sec:geometry}
-A lensed repeater can also be found without a classifier: a galaxy lens fixes the delay to far better than the 4\,ms
-catalogue timing, so two burst pairs that share one delay are already significant. We calibrated this timing test on burst
-lists scrambled by whole sidereal days and confirmed its false-alarm rate on independent scrambles (\FarHeldOut).
+A lensed repeater can also be found without a classifier. A galaxy lens fixes $\Delta t$ to far better than the 4\,ms
+catalogue timing, so two burst pairs $(i,j)$, $(k,l)$ of one source with $|\Delta t_{ij}-\Delta t_{kl}|$ below four combined
+timing errors already form a significant pattern. We calibrated this timing test on burst lists scrambled by whole sidereal
+days, which keeps each burst's hour angle, and confirmed its false-alarm rate on independent scrambles (\FarHeldOut).
+
+Both the classifier and the timing test need the copies to be recorded. CHIME is a transit telescope: every recorded burst
+arrives within a window of width $W(\delta)=2\theta_{\rm EW}/(15^\circ\,\mathrm{h}^{-1}\cos\delta)$ around transit, with
+$\theta_{\rm EW}\approx1.1^\circ$ measured from the real bursts. The copy of each burst arrives at the same hour-angle offset,
+$24\,\mathrm{h}\times\mathrm{frac}(\Delta t/T_{\rm sid})$, so copies are recorded for all bursts or none (Fig.~\ref{fig:concept}b),
+and for a broad delay distribution
+\begin{equation}
+p_{\rm align}\approx 2W(\delta)/T_{\rm sid},
+\label{eq:palign}
+\end{equation}
+doubled above $\delta=70^\circ$, where lower transits add a window. Simulating singular-isothermal-sphere lenses with each
+source's redshift, burst times and exposure gives a median $p_{\rm align}$ of \PalignMedian, following (\ref{eq:palign})
+(Fig.~\ref{fig:transit}). Repeating FRBs therefore do not escape the transit problem known for one-off
+bursts~\cite{ConnorRavi2022}.
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.92\columnwidth]{fig_transit.pdf}
-\caption{Share of galaxy-lens delays for which CHIME records the copies of a repeater's bursts, for the 83 Catalog~2
-repeaters (points, simulated with each source's own burst times, exposure and redshift) and the analytic window width
-(dashed).}
+\includegraphics[width=0.95\columnwidth]{fig_transit.pdf}
+\caption{Share of lens delays for which CHIME records the copies of a repeater's bursts: the 83 Catalog~2 repeaters
+(simulated with their own burst times, exposure and redshift) and (\ref{eq:palign}) (dashed).}
 \label{fig:transit}
 \end{figure}
 
-Both the classifier and the timing test need the copies to be recorded. CHIME is a transit telescope: it sees a source for
-minutes per day, and every recorded burst arrives within minutes of transit. The copy of each burst then arrives at the same
-hour-angle offset, $24\,\mathrm{h}\times\mathrm{frac}(\Delta t/T_{\rm sid})$, so copies are recorded for all bursts or none,
-and only if the delay is within minutes of a whole number of sidereal days. Simulating singular-isothermal-sphere lenses
-with each source's redshift, burst times and exposure, this happens for \PalignMedian\ of lenses at the median, following
-the analytic window width (Fig.~\ref{fig:transit}). Repeaters therefore do not escape the transit problem known for one-off
-bursts~\cite{ConnorRavi2022}. Table~\ref{tab:forecast} gives the expected number of detectable lensed repeaters: the
-Catalog~2 sample is expected to hold \NexpCHIME--\NexpCHIMEbias\ (without and with magnification bias), so a null search is
-the expected outcome; a 10-year transit survey gains only \GainTenYr$\times$, while an all-sky monitor watching the same
-sources gains \GainAllSky$\times$.
 \begin{table}[t]
-\caption{Expected lensed repeaters among the 83 Catalog~2 sources ($\gamma$: magnification-bias slope).}
+\caption{Expected numbers of lensed repeaters among the 83 Catalog~2 sources ($\gamma$: magnification-bias slope).}
 \label{tab:forecast}
 \centering
+\setlength{\tabcolsep}{2.5pt}
 \resizebox{\columnwidth}{!}{%
 \begin{tabular}{lccc}
 \toprule
-Survey & $\sum\tau$ & $N_{\rm exp}$ (timing) & $N_{\rm exp}$ ($\ge1$ copy) \\
+Survey & CHIME, timing & CHIME, $\ge1$ copy & All-sky, timing \\
 \midrule
-\ForecastRows
+\ForecastCompact
 \bottomrule
 \end{tabular}}
-\end{table} The result is robust to the assumed host dispersion
-(\HostSens\ in yield). For transit surveys the classifier's role is to vet the rare single recorded copy and to discard
-impostors; its full value lies with wide-field arrays such as BURSTT~\cite{Ho2023}.
+\end{table}
+
+Table~\ref{tab:forecast} gives the expected number of detectable lensed repeaters. The Catalog~2 sample holds
+\NexpCHIME--\NexpCHIMEbias, so a null search is the expected outcome; a 10-year transit survey gains only \GainTenYr$\times$
+because the alignment requirement remains, while an all-sky monitor watching the same sources gains \GainAllSky$\times$. The
+result changes by \HostSens\ when the assumed host-galaxy dispersion is doubled. For transit surveys the classifier's role is
+to vet the rare single recorded copy and reject impostors; its full value lies with wide-field arrays such as
+BURSTT~\cite{Ho2023}.
 
 \section{Discussion and Limitations}
-Simulated false-positive rates rank methods, but deployment thresholds must come from real negatives; twin matching is what
-makes such a check interpretable, because it separates simulation gaps from differences in sample composition. Our results
-are development results: the test split is sealed until the team signs off the propagation model, and the reproduction found
-model 6 about 0.05 recall below the original seeds on a second machine, for reasons we have not isolated. The lens model is a
-singular isothermal sphere, impostor strength rests on a simulation choice, and the validation set has only 26 sources.
+Simulated false-positive rates rank methods, but deployment thresholds must come from real negatives, and twin matching is
+what makes such a check interpretable: it separates simulation gaps from differences in sample composition, and it exposed
+a real-versus-simulated format mismatch that no simulated benchmark would show. The limitations are equally concrete. The
+results are development results, because the test split is sealed until the team signs off the propagation model. The
+second machine reproduced the data bit for bit but placed model 6 about 0.05 recall below the original seeds, for reasons not
+yet isolated. Lenses are singular isothermal spheres, impostor strength rests on a simulation choice, and the validation set
+holds 26 sources.
 
 \section{Conclusion}
 A small Siamese network that aligns before it compares identifies lensed copies of real FRB spectra far better than physics
 and feature baselines, passes real-data checks designed for a detector without real positives, and reproduces on a second
 machine. The same analysis shows that transit geometry, not classification accuracy, is the bottleneck for finding lensed
-repeaters, which points such detectors to wide-field radio arrays.
+repeaters, which points such detectors to wide-field radio arrays. All inputs are public (CHIME/FRB Catalog~2, DOI
+10.11570/25.0066); code, frozen-set manifests, hashes and pre-registered plans are in the project repository (link withheld
+for review).
 
-\textbf{Reproducibility.} All inputs are public (CHIME/FRB Catalog~2, DOI 10.11570/25.0066). Code, frozen-set manifests and
-hashes, pre-registered plans and every result update are in the project repository (link withheld for review).
+\pending{Test-split result after team sign-off; then remove this marker.}
 
-\pending{Test-split result after team sign-off.}
+\section*{Acknowledgment}
+\pending{Funding and acknowledgments.}
 
 \bibliographystyle{IEEEtran}
 \bibliography{../paper/references}

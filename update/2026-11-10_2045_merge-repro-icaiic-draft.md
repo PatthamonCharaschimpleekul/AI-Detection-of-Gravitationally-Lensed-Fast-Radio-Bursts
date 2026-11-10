@@ -39,3 +39,16 @@
 - **Test split (Stage 5):** needs the team's sign-off. The paper is written to stand on development results, and a red marker holds the place for the test result.
 - **Dual submission:** ICAIIC forbids it, so the MNRAS version must wait until the ICAIIC decision (15 Dec) and then be substantially extended.
 - **Model 6 variants M and P (team plan 1300):** if adopted before the deadline, Table I and the ablations should use the final recipe.
+
+## Addendum 2026-11-10 22:30: ICAIIC paper rewritten on the IEEE conference template, with new diagrams
+- **Template:** follows the IEEE conference template, `IEEEtran.cls` v1.8b in conference mode with the `bare_conf.tex` structure. US-letter page size (ICAIIC accepts A4 or letter). All fonts are embedded. The draft is **6 pages**, the ICAIIC limit.
+- **Content now covers:**
+  - **Formal problem statement:** labels, symmetric score, Recall@1% FPR, the source bootstrap, and the constraint that real data supply negatives only.
+  - **Model equations:** correlation, softmax alignment and the symmetric log-odds score.
+  - **Results tables:** an AUC column for every method; a real-data validation table comparing the team's machine with the second machine; error analysis by negative type (35–38 of 40 false positives at the 1% threshold are envelope-sharing impostors); and efficiency (1149 pairs/s on one RTX 5070 Ti, so all 78,701 same-source Catalog 2 pairs take about 70 s).
+  - **Survey-geometry section:** the window-width formula for p_align, and a compact forecast table.
+- **New vector diagrams** (`paper_icaiic/diagrams/make_diagrams.py`): HTML + inline SVG, printed to PDF with headless Chrome.
+  - **`fig_concept`:** (a) lensing geometry with two paths and two dispersed copies of one burst, the ν^-2 sweep computed from the cold-plasma law; (b) transit alignment, copies missed vs recorded.
+  - **`fig_workflow`:** real CHIME bursts (tiles drawn from real Catalog 2 dynamic spectra) → pair simulator (pairs built from catalogue templates + noise + masks) → network → validation → deployment.
+  - **`fig_arch`:** model 6 in detail. Its correlation profile and softmax weights are computed from the pair shown.
+- **Removed:** the matplotlib example-pairs figure, to fit 6 pages. The workflow figure now shows the four classes.

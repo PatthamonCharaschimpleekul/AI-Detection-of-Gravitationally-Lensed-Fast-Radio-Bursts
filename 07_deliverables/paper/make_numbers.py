@@ -52,8 +52,8 @@ def main():
     out["NexpCHIMEbias"] = sci(bias["chime"]) if bias else r"\pending{bias run}"
     h150 = track_c("_host150")
     if base and h150:
-        out["HostSens"] = f"{100 * (h150['chime'] / base['chime'] - 1):+.0f}" + r"\%"
-        out["HostSensTau"] = f"{100 * (h150['tau'] / base['tau'] - 1):+.0f}" + r"\%"
+        out["HostSens"] = f"{100 * (h150['chime'] / base['chime'] - 1):+.0f}".replace("-", "$-$") + r"\%"
+        out["HostSensTau"] = f"{100 * (h150['tau'] / base['tau'] - 1):+.0f}".replace("-", "$-$") + r"\%"
     ten, tenb = track_c("_10yr"), track_c("_10yr_bias15")
     if base and ten and bias and tenb:
         out["GainTenYr"] = f"{ten['chime'] / base['chime']:.1f}--{tenb['chime'] / bias['chime']:.1f}"
