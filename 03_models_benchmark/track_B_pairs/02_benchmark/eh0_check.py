@@ -1,6 +1,6 @@
 """Calibration identity check on real negatives: E_U[r] = 1 for a true likelihood ratio r = p(x|lensed)/p(x|unrelated).
 
-Reads outputs/stage3_val_scores.npz (written by transfer_check.py). For each learned model, r_hat = exp(log-ratio
+Reads outputs/stage3_generic_scores.npz (written by transfer_check.py). For each learned model, r_hat = exp(log-ratio
 lensed vs unrelated), from balanced-class training. On simulated unrelated pairs the mean should be near 1 if the
 network is calibrated; on real cross-source pairs (true unrelated pairs) a mean well above 1 means the model claims
 more evidence on real negatives than its training supports, which would bias any posterior odds.
@@ -28,7 +28,7 @@ def e_value(r):
 
 
 def main():
-    d = np.load(OUT / "stage3_val_scores.npz", allow_pickle=True)
+    d = np.load(OUT / "stage3_generic_scores.npz", allow_pickle=True)
     sa, sb = d["src_a"].astype(str), d["src_b"].astype(str)
     names = sorted(set(sa) | set(sb))
     idx = {s: k for k, s in enumerate(names)}

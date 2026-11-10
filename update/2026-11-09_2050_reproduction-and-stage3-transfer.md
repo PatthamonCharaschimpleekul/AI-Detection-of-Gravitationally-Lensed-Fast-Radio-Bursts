@@ -110,3 +110,20 @@
 - If the team shares the original machine's seed checkpoints, run Stage 3 on them too, and check whether the ~0.05 replicate offset comes from the worker count (rerun with 14 workers when RAM allows).
 - Run Stage 3 on the other two seeds' checkpoints from the original machine, if the team shares them.
 - Test-split evaluation and the search need team sign-off (Stage 5).
+
+## Correction 2026-11-10 20:30: model 6's "real gap" was the zero-padded windows, not template deficit
+- **What the earlier results missed:** our `transfer_check.py` scored real windows without `inject.fill_window`. The team's update 2026-11-09_1520 showed that zero-padded short windows (15% of real files) raise model 6's scores on real pairs.
+- **Rerun with the fill:** we ran the team's `stage3_transfer.py` (with the fill) on this machine's model 6 seeds, through `02_benchmark/repro_upstream_m6.py`. The script is unchanged; only its checkpoint list is narrowed and its pools are capped at 8.
+  - Same sample: 90 files, 29 sources, 3851 pairs.
+  - **All 12 verdicts pass.** Headline real FPR for model 6 seeds 0/1/2 is 1.5 / 1.3 / 1.0%.
+  - The real~twin Spearman is 0.91–0.92 against ceilings of 0.87–0.89, so model 6 transfers at the ceiling.
+  - Baselines: b1_blk16 0.007, b2_blk16 0.006, GBM 0.010.
+- **Real-burst lensed test (team's `realburst.py`, this machine's seeds):**
+  - At S/N 25, model 6 real/template is **0.97 [0.91, 1.08]**, with real 0.604 and noise-only 0. **PASS.**
+  - At S/N 40 the ratio is 1.04.
+  - Team values: 0.96 at S/N 25 and 0.99 at S/N 40.
+- **Stage 1 baselines reproduce:** b1 and b2 recalls are identical to update 2026-11-06_1352; the GBM is 0.280 [0.173, 0.413].
+- **Retracted:** "model 6 is the only method with a genuine sim-to-real gap, tied to template deficit".
+  - The deficit correlation (`deficit_twin.py`) was computed on unfilled windows. The bursts whose windows were zero-padded both looked more deficient by our measure and drew the spurious scores.
+  - The twin-composition result for b1 under *generic-simulation* thresholds still stands. It is a reason to keep the team's twin-matched threshold, not a separate finding.
+- **`transfer_check.py` outputs are renamed** to `stage3_generic_*` so that they do not collide with the team's `stage3_val.txt`.

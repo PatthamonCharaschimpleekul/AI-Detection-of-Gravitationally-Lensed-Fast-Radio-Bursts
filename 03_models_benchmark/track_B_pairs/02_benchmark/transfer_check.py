@@ -9,7 +9,7 @@ Twin test: each real pair is re-simulated twice from its own two templates at th
 Spearman(twin, twin2) means the score uses something the templates lack.
 
 Usage (from this folder): python transfer_check.py --model 6:../01_training/outputs/m6_s0/best.pt [--model ...]
-Writes outputs/stage3_val.txt and outputs/stage3_val_scores.npz. Never reads test-split sources.
+Writes outputs/stage3_generic_val.txt and outputs/stage3_generic_scores.npz. Never reads test-split sources.
 """
 import argparse, sys
 from multiprocessing import Pool
@@ -228,8 +228,8 @@ def main():
     rep.append("\nheadline (S/N >= 25) verdicts: " + ", ".join(f"{m} {'PASS' if v else 'FAIL'}" for m, v in verdict.items()))
     txt = "\n".join(rep)
     print(txt)
-    (OUT / "stage3_val.txt").write_text(txt + "\n")
-    np.savez(OUT / "stage3_val_scores.npz", r_smin=r_smin, r_ov=r_ov, src_a=src_a, src_b=src_b, s_smin=s_smin, s_ov=s_ov,
+    (OUT / "stage3_generic_val.txt").write_text(txt + "\n")
+    np.savez(OUT / "stage3_generic_scores.npz", r_smin=r_smin, r_ov=r_ov, src_a=src_a, src_b=src_b, s_smin=s_smin, s_ov=s_ov,
              **{f"real|{k}": v for k, v in Rs.items()}, **{f"sim|{k}": v for k, v in S.items()},
              **{f"twin1|{k}": v for k, v in T1.items()}, **{f"twin2|{k}": v for k, v in T2.items()})
 

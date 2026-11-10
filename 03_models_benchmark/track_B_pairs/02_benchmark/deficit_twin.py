@@ -7,7 +7,7 @@ Tests, per method, in the S/N bins of Stage 3:
   - level: Spearman(pair deficit, real score - twin score). Positive = real pairs score higher than their twins
     the more energy the templates miss (the b1 level shift).
   - scatter: Spearman(pair deficit, |rank(real) - rank(twin)|). Positive = the twin gap grows with the deficit.
-Reads outputs/stage3_val_scores.npz and rebuilds the pair list exactly as transfer_check.py does.
+Reads outputs/stage3_generic_scores.npz and rebuilds the pair list exactly as transfer_check.py does.
 """
 import sys
 from pathlib import Path
@@ -44,7 +44,7 @@ def main():
     c = P.c
     R = np.sort(np.concatenate(list(P.tmpl.values())))
     pairs = np.array([(int(i), int(j)) for k, i in enumerate(R) for j in R[k + 1:] if c["source"][i] != c["source"][j]])
-    z = np.load(OUT / "stage3_val_scores.npz", allow_pickle=True)
+    z = np.load(OUT / "stage3_generic_scores.npz", allow_pickle=True)
     assert len(pairs) == len(z["r_smin"]) and (c["source"][pairs[:, 0]] == z["src_a"]).all(), "pair order differs"
     print(f"burst deficit over {np.isfinite(d[R]).sum()} val templates: median {np.nanmedian(d[R]):.2f} "
           f"(IQR {np.nanpercentile(d[R], 25):.2f}-{np.nanpercentile(d[R], 75):.2f}); all eligible {np.nanmedian(d[c['eligible']]):.2f}")

@@ -6,7 +6,7 @@ threshold:
   real FPR - twin FPR   = transfer gap (what the simulator misses),
   twin FPR - 1%         = composition effect (which pairs, at which S/N).
 Twin FPR is the mean over the two twin draws. Interval on the transfer gap: source bootstrap (pairs weighted by both
-sources' multiplicities, as transfer_check.boot_fpr). Reads outputs/stage3_val_scores.npz. Output: outputs/stage3_twin_fpr.txt
+sources' multiplicities, as transfer_check.boot_fpr). Reads outputs/stage3_generic_scores.npz. Output: outputs/stage3_twin_fpr.txt
 """
 from pathlib import Path
 
@@ -18,7 +18,7 @@ B, SEED = 2000, 2026
 
 
 def main():
-    z = np.load(OUT / "stage3_val_scores.npz", allow_pickle=True)
+    z = np.load(OUT / "stage3_generic_scores.npz", allow_pickle=True)
     r, s = z["r_smin"], z["s_smin"]
     sa, sb = z["src_a"].astype(str), z["src_b"].astype(str)
     names = sorted(set(sa) | set(sb))
