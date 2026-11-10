@@ -12,7 +12,7 @@ import numpy as np
 
 HERE = Path(__file__).resolve().parent
 sys.path[:0] = [str(HERE), str(HERE.parent / "01_training"), str(HERE.parents[2] / "02_injection_labelling" / "01_injection")]
-from inject import BRIGHT, REAL, SNR_MIN, fill_window, kind_of, load_pools, member
+from inject import BRIGHT, REAL, SNR_MIN, fill_window, load_pools, member
 import baselines as BL
 from metrics import FPR
 
@@ -88,9 +88,19 @@ def learned_scores(getter, n_items):
     return {k: np.concatenate(v).astype(float) for k, v in out.items()}
 
 
+def operating_negatives():
+    """val_bright repeat + impostor scores per method: their 99th percentile is the primary metric's threshold."""
+    vb = np.load(OUT / "scores_val_bright.npz")
+    keep = vb["y"] != 2
+    neg = vb["y"][keep] != 0
+    out = {k: vb[k][keep][neg] for k in BASE + ["b3_gbm"]}
+    for m, s in CKPTS:
+        out[f"m{m}_s{s}"] = np.load(HERE.parent / "01_training" / "outputs" / f"m{m}_s{s}" / "val_bright_scores.npy")[neg]
+    return out
+
+
 def main():
     from scipy.stats import spearmanr
-    from sklearn.ensemble import HistGradientBoostingClassifier
     pools, c, files, IDX, X, M = load_real()
     src = c["source"]
     pairs = np.array([(i, j) for a, i in enumerate(files) for j in files[a + 1:] if src[i] != src[j]])
@@ -107,11 +117,7 @@ def main():
         r = pool.map(feats, jobs, chunksize=40)
     S = np.array([x[0] for x in r]); F = np.array([x[1] for x in r])
     with Pool(16, initializer=BL.init) as pool:
-        tr = BL.run(pool, BL.gbm_jobs("train", 300))
-        chk = BL.run(pool, [("val", kind_of(k, True), [201, k], False, BRIGHT) for k in range(200)])
-    gbm = HistGradientBoostingClassifier(random_state=0).fit(tr["f"], tr["y"] == 0)
-    saved = np.load(OUT / "scores_val_bright.npz")
-    assert np.allclose(gbm.predict_proba(chk["f"])[:, 1], saved["b3_gbm"][:200]), "GBM refit differs from Stage 1"
+        gbm = BL.fit_gbm(pool)
     allsc = {k: S[:, BL.METHODS.index(k)] for k in BASE} | {"b3_gbm": gbm.predict_proba(F)[:, 1]}
     R = {k: v[:npr] for k, v in allsc.items()}
     T = {k: v[npr:].reshape(npr, NTWIN) for k, v in allsc.items()}
@@ -151,13 +157,7 @@ def main():
                 v.append((wt * hit).sum() / wt.sum())
         return np.percentile(v, [2.5, 97.5])
 
-    vb = np.load(OUT / "scores_val_bright.npz")
-    keep = vb["y"] != 2
-    TRN = HERE.parent / "01_training" / "outputs"
-    vneg = {k: vb[k][keep][vb["y"][keep] != 0] for k in BASE + ["b3_gbm"]}
-    for m, s in CKPTS:
-        v = np.load(TRN / f"m{m}_s{s}" / "val_bright_scores.npy")
-        vneg[f"m{m}_s{s}"] = v[vb["y"][keep] != 0]
+    vneg = operating_negatives()
 
     bins = {"[10,25)": (snr >= SNR_MIN) & (snr < BRIGHT), ">=25 (headline)": snr >= BRIGHT}
     say(f"real windows with missing columns: {load_real.n_short}, filled with mirrored off-pulse noise: {load_real.n_filled}")

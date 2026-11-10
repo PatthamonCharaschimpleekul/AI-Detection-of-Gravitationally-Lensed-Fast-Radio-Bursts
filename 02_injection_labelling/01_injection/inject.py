@@ -315,18 +315,20 @@ def fshift(a, d):
     return np.fft.irfft(F, n, axis=1)[:, :WIN]
 
 
-def member(c, ti, bi, snr, rng, tau600, wide, off=(), gain_shared=None, scint_shared=None):
+def member(c, ti, bi, snr, rng, tau600, wide, off=(), gain_shared=None, scint_shared=None, S0=None, amp=None):
     """One pair member: template ti on background row bi at injected matched-filter S/N snr.
     off: nuisances to switch off ("shift", "dm", "scint") for the twin ladder; draws still happen
     so the remaining nuisances get identical values. gain_shared / scint_shared: impostor imprints
-    shared by both members (I1 plasma-lens gain, I2 scintillation pattern) instead of independent ones."""
+    shared by both members (I1 plasma-lens gain, I2 scintillation pattern) instead of independent ones.
+    S0, amp: inject the image S0 (e.g. a real-burst cutout, already in sigma units) at fixed amplitude amp instead of
+    template ti at S/N snr; snr still sets the residual-DM width. Same rng draws either way (plan 2026-11-10_0900)."""
     f = c["freq_mhz"]
     fi = c["bg_file"][bi]
     mask = c["fm"][fi] >= 0.25
     sig = c["sigma"][fi]
     med = np.median(sig[mask])
     sig = np.clip(sig, med / 3, med * 3)  # nearly-masked channels must not blow up the template
-    S = c["T"][ti] / sig[:, None]  # physical template in the BACKGROUND file's sigma units
+    S = c["T"][ti] / sig[:, None] if S0 is None else S0.astype(float)  # physical template in the BACKGROUND file's sigma units
     shift = rng.uniform(-1, 1) * (20 if wide else 10)
     sdm = c["dm_err"][ti] * c["model_snr"][ti] / snr * (3 if wide else 1)
     ddm = rng.normal(0, sdm)
@@ -353,7 +355,7 @@ def member(c, ti, bi, snr, rng, tau600, wide, off=(), gain_shared=None, scint_sh
                                       for k in (1, 2, 3)) / np.sqrt(3), 0.05, None)
     S *= gain[:, None]
     S[~mask] = 0.0
-    a = snr / np.sqrt((S ** 2).sum())
+    a = snr / np.sqrt((S ** 2).sum()) if amp is None else amp
     assert np.isfinite(a), f"empty template {ti} on background {bi}"
     out = a * S + c["bg_X"][bi]
     # re-normalise per channel exactly like preprocessing: off-pulse = outside the injected extent +- OFF_PAD

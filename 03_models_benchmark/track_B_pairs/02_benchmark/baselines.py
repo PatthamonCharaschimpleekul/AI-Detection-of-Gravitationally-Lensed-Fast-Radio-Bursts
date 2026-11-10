@@ -156,6 +156,17 @@ def gbm_jobs(split, base):
     return [(split, KINDS[i % 4], [base + (i >= N_TRAIN), i], False, 25.0 if i >= N_TRAIN else SNR_MIN) for i in range(2 * N_TRAIN)]
 
 
+def fit_gbm(pool):
+    """The Stage 1 GBM, refitted (deterministic); checked against the saved val_bright scores on 200 pairs.
+    pool must be initialised with init()."""
+    from sklearn.ensemble import HistGradientBoostingClassifier
+    tr = run(pool, gbm_jobs("train", 300))
+    chk = run(pool, [("val", kind_of(k, True), [201, k], False, BRIGHT) for k in range(200)])
+    gbm = HistGradientBoostingClassifier(random_state=0).fit(tr["f"], tr["y"] == 0)
+    assert np.allclose(gbm.predict_proba(chk["f"])[:, 1], np.load(OUT / "scores_val_bright.npz")["b3_gbm"][:200]), "GBM refit differs from Stage 1"
+    return gbm
+
+
 def run_fold(scheme, k):
     """F5: GBM refitted per fold (same recipe), baselines 1-2 with frozen grids, held-out fold set scored once."""
     from sklearn.ensemble import HistGradientBoostingClassifier
