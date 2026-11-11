@@ -37,7 +37,7 @@ share a propagation imprint, and decisions must hold at a 1\% false-positive rat
 all 981 public dynamic spectra of the 83 repeating sources in the CHIME/FRB Catalog~2, and propose a 259k-parameter Siamese
 network that aligns the two bursts' feature maps with a differentiable correlation layer before fusing them. In a
 source-grouped cross-validation rehearsal on the 60 development sources it recovers \RecallMsixOOF\ of lensed pairs at 1\% false-positive rate, against
-\RecallGBMOOF\ for the best physics- or feature-based baseline, and ablations over three seeds show that both alignment and
+\RecallGBMOOF\ for the best physics- or feature-based baseline within the simulated nuisance ranges, and ablations over three seeds show that both alignment and
 impostor training are needed. Because the positive class has no real counterpart, we validate on real data in three ways:
 real cross-source pairs serve as true negatives scored against per-pair simulated twins (false-positive rate 0.8--1.5\%,
 within a pre-registered 2\% limit), two copies of a real burst stand in for a lensed pair (recall ratio 0.96--0.97 to
@@ -288,7 +288,9 @@ Hard-negative repeats & \AblHardnegR & \AblHardnegD \\
 \textbf{Ablations.} Removing the alignment, or training without impostors, lowers recall in every seed
 (Table~\ref{tab:abl}); without impostors the network mistakes envelope-sharing bursts of one source for copies. Oversampling
 template-similar repeats helps slightly in every seed, but the interval includes zero, and on a closed-form benchmark this
-scheme biased a learned likelihood ratio low by about 1\,dex, so we do not adopt it without a correction.
+scheme biased a learned likelihood ratio low by about 1\,dex, so we do not adopt it without a correction. Two training changes aimed at the source memorisation, merging the unrelated
+label into repeat and a random smooth bandpass per member, did not raise recall on unseen sources (paired differences
+$-$0.036 to $-$0.006, all intervals including zero; original machine, three seeds each).
 
 \begin{table}[t]
 \caption{Real-data validation of model 6 on two machines (validation sources; 95\% source bootstrap where given).}
@@ -378,14 +380,17 @@ BURSTT~\cite{Ho2023}.
 Simulated false-positive rates rank methods, but deployment thresholds must come from real negatives, and twin matching is
 what makes such a check interpretable: it separates simulation gaps from differences in sample composition, and it exposed
 a real-versus-simulated format mismatch that no simulated benchmark would show. The limitations are equally concrete. The
-results are development results, because the test split is sealed until the team signs off the propagation model, and the grouped-fold numbers are a rehearsal on development sources. The
+results are development results, because the test split stays sealed under the pre-registered protocol, and the grouped-fold numbers are a rehearsal on development sources. Recall falls with differential scattering between the
+two images: on validation pairs it halves at $\tau_{600}\approx1$\,ms and is 0.13 of its unscattered value at 3\,ms, and
+training to 10\,ms does not recover it, whereas the physics fit, which models scattering, keeps its recall to 3\,ms. The
+detector therefore suits lenses with little cold gas, which dominate the lensing optical depth. The
 second machine reproduced the data bit for bit but placed model 6 about 0.05 recall below the original seeds, for reasons not
 yet isolated. Lenses are singular isothermal spheres, impostor strength rests on a simulation choice, and the validation set
 holds 26 sources.
 
 \section{Conclusion}
 A small Siamese network that aligns before it compares identifies lensed copies of real FRB spectra far better than physics
-and feature baselines, passes real-data checks designed for a detector without real positives, and reproduces on a second
+and feature baselines within the simulated nuisance ranges, passes real-data checks designed for a detector without real positives, and reproduces on a second
 machine. The same analysis shows that transit geometry, not classification accuracy, is the bottleneck for finding lensed
 repeaters, which points such detectors to wide-field radio arrays. All inputs are public (CHIME/FRB Catalog~2, DOI
 10.11570/25.0066); code, frozen-set manifests, hashes and pre-registered plans are in the project repository (link withheld

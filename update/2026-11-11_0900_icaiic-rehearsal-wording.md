@@ -106,3 +106,17 @@
 - Median p_align ranges over 1.79–1.87%.
 - The paper's values lie inside these ranges.
 - Quote the forecast as "~5×10⁻⁶" rather than to two significant figures. This is the team's decision.
+
+## Addendum 2026-11-11 17:30: scattering limit and negative ablation in the paper
+**Changes (user: "ปรับ paper และ push"; the test stays sealed, and the user chose to submit ICAIIC on development results):**
+1. **Abstract and conclusion:** the comparison with the baselines is qualified "within the simulated nuisance ranges".
+2. **Limitations:**
+   - The "sealed until the team signs off the propagation model" wording is replaced. The sign-off is done, so the text now reads "sealed under the pre-registered protocol".
+   - Added the scattering limit from updates 1340, 1630 and 1700:
+     - recall halves at τ₆₀₀ ≈ 1 ms and falls to 0.13× at 3 ms;
+     - training to 10 ms does not recover it;
+     - the physics fit keeps its recall to 3 ms;
+     - the detector suits lenses with little cold gas.
+3. **Ablations paragraph:** the variants M and P are added as a negative ablation (−0.036 to −0.006, every interval includes zero), from update 1110.
+
+**Build:** 6 pages, no Type 3 fonts. References now start on page 6, with the two columns balanced.
