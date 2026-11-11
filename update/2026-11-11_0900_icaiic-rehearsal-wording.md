@@ -81,3 +81,28 @@
 **Build**
 - 6 pages, no overfull boxes.
 - The only Type 3 fonts left are in Fig. 5.
+
+## Addendum 2026-11-11 12:00: Fig. 5 regenerated from the second machine's outputs
+**Files received** from the second machine: `track_c_sources.csv` and `repeaters.csv`.
+- `repeaters.csv` is byte-identical to this machine's `population.py` output.
+- `track_c_sources.csv` reproduces every forecast number in the paper:
+
+  | Quantity | Value |
+  |---|---|
+  | Median p_align | 1.81% |
+  | Σ τ | 2.88e-3 |
+  | CHIME N_exp, timing | 5.26e-6 |
+  | CHIME N_exp, ≥ 1 copy | 3.17e-5 |
+  | All-sky N_exp, timing | 2.63e-4 (×50) |
+
+- Both files are placed in the gitignored `outputs/` folders.
+
+**Fig. 5:** regenerated with `make_figures.fig_transit()` only. The other MNRAS figures were not touched.
+
+**ICAIIC PDF:** 6 pages, no Type 3 fonts, every font embedded.
+
+**Monte Carlo scatter of the forecast.** Six extra seeds of `timing.py` were run on this machine, with SEED set from outside; the code is unchanged.
+- CHIME timing N_exp ranges over 3.7–6.4e-6 (mean 5.0e-6, SD about 20%).
+- Median p_align ranges over 1.79–1.87%.
+- The paper's values lie inside these ranges.
+- Quote the forecast as "~5×10⁻⁶" rather than to two significant figures. This is the team's decision.
