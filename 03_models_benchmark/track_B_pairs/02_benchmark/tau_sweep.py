@@ -15,7 +15,7 @@ from inject import BRIGHT, MAN, load_pools, load_set, make_pair
 import stage3_transfer as S3
 from metrics import FPR
 
-RUNS = [f"m6_s{s}" for s in range(3)]
+RUNS = sys.argv[sys.argv.index("--runs") + 1].split(",") if "--runs" in sys.argv else [f"m6_s{s}" for s in range(3)]
 TAUS = [0.0, 0.3, 1.0, 3.0, 10.0, 30.0]
 N = 2000
 out = []
@@ -64,7 +64,7 @@ def main():
         base = rec if base is None else base
         say(f"  tau600 {t:5.1f} ms (1 GHz {t * 0.6 ** 4.4:6.3f} ms)  recall " + " / ".join(f"{x:.3f}" for x in rec)
             + f"  mean {rec.mean():.3f}  ratio to tau 0: {(rec / base).mean():.2f}")
-    (HERE / "outputs" / "tau_sweep.txt").write_text("\n".join(out) + "\n")
+    (HERE / "outputs" / ("tau_sweep_" + RUNS[0].split("_", 2)[-1] + ".txt" if "--runs" in sys.argv else "tau_sweep.txt")).write_text("\n".join(out) + "\n")
 
 
 if __name__ == "__main__":

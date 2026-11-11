@@ -19,7 +19,7 @@ from metrics import FPR, boot_recall, recall_at_fpr
 
 OUT = HERE / "outputs"
 TRN = HERE.parent / "01_training" / "outputs"
-VARIANTS = {"current": "", "M": "_M", "P": "_P", "M+P": "_MP"}
+VARIANTS = {"current": "", "M": "_M", "P": "_P", "M+P": "_MP", "S": "_S"}  # S: plan 2026-11-11_1400, own rule
 if "--dry" in sys.argv:  # pipeline check before the runs exist: every variant points at the current model 6
     VARIANTS = {v: "" for v in VARIANTS}
 RUNS = {v: [f"m6_s{s}{t}" for s in range(3)] for v, t in VARIANTS.items()}

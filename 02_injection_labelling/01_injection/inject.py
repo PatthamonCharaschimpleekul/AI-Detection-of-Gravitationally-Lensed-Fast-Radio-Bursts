@@ -383,11 +383,12 @@ def envelope_transfer(Ta, Tb):
     return np.clip(ea / np.maximum(eb, 1e-3), 0.0, I1_RMAX)
 
 
-def make_pair(kind, rng, P, wide=False, snr_floor=SNR_MIN, bandpass=False, tau_force=None):
+def make_pair(kind, rng, P, wide=False, snr_floor=SNR_MIN, bandpass=False, tau_force=None, tau_hi=None):
     """Returns xa, xb (NF, WIN) float32, mask_a, mask_b, label (0 lensed, 1 repeat, 2 unrelated, 3 impostor), info.
     impostor = two different templates of one source sharing I1 (plasma-lens gain), I2 (scintillation) or both.
     tau_force: diagnostic scattering sweep only (plan 2026-11-11_1300); every draw still happens, then the scattered
-    member gets this tau600 (ms). Never used for frozen sets."""
+    member gets this tau600 (ms). Never used for frozen sets.
+    tau_hi: training-only upper end (ms) of the log-uniform tau600 draw (plan 2026-11-11_1400); same draw count."""
     c = P.c
     s = P.sources[rng.integers(len(P.sources))]
     if kind == "lensed":
@@ -419,7 +420,7 @@ def make_pair(kind, rng, P, wide=False, snr_floor=SNR_MIN, bandpass=False, tau_f
     ba, bb = rng.choice(P.bgs, 2, replace=False)
     while c["bg_file"][bb] == c["bg_file"][ba] or c["bg_file"][bb] in (ta, tb) or c["bg_file"][ba] in (ta, tb):
         ba, bb = rng.choice(P.bgs, 2, replace=False)  # backgrounds never from the template's own file
-    hi = 3.0 if wide else 1.0
+    hi = tau_hi if tau_hi is not None else 3.0 if wide else 1.0
     tau = float(np.exp(rng.uniform(np.log(0.01), np.log(hi)))) if rng.random() < 0.5 else 0.0
     tau = tau if tau_force is None else float(tau_force)
     which = int(rng.integers(2))
