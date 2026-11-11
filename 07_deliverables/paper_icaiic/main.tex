@@ -35,8 +35,8 @@ only by propagation effects. Recognising such copies among the bursts of repeati
 problem with three difficulties: no real positive example exists, the negatives include adversarial \emph{impostors} that
 share a propagation imprint, and decisions must hold at a 1\% false-positive rate. We build a semi-synthetic benchmark from
 all 981 public dynamic spectra of the 83 repeating sources in the CHIME/FRB Catalog~2, and propose a 259k-parameter Siamese
-network that aligns the two bursts' feature maps with a differentiable correlation layer before fusing them. In
-source-grouped cross-validation it recovers \RecallMsixOOF\ of lensed pairs at 1\% false-positive rate, against
+network that aligns the two bursts' feature maps with a differentiable correlation layer before fusing them. In a
+source-grouped cross-validation rehearsal on the 60 development sources it recovers \RecallMsixOOF\ of lensed pairs at 1\% false-positive rate, against
 \RecallGBMOOF\ for the best physics- or feature-based baseline, and ablations over three seeds show that both alignment and
 impostor training are needed. Because the positive class has no real counterpart, we validate on real data in three ways:
 real cross-source pairs serve as true negatives scored against per-pair simulated twins (false-positive rate 0.8--1.5\%,
@@ -193,7 +193,9 @@ warm-up steps and cosine decay; the checkpoint is selected on the validation bri
 \section{Validation Without Real Positives}
 \label{sec:validation}
 \textbf{Grouped folds.} Because the validation interval was wide, a pre-registered rule moved the primary comparison to five
-source-grouped folds, in which every source is scored by a model that never saw it.
+source-grouped folds, in which every source is scored by a model that never saw it. Here we report the rehearsal of this
+protocol on the 60 development sources (training and validation; test sources excluded), with one model-6 seed per fold;
+the final folds over all 80 sources follow the test sign-off.
 
 \textbf{True-negative transfer.} Two bursts from different sources cannot be lensed copies, so real cross-source pairs are
 labelled negatives that can be scored without breaking the blind protocol. For each real pair we simulate five
@@ -219,7 +221,8 @@ properties per member, the best of 1--3 and the pre-registered comparator; (4)~a
 network comparing embedding vectors; and (7)~cross-attention between time--frequency patches.
 
 \begin{table}[t]
-\caption{Recall at 1\% FPR (lensed vs repeat + impostor), S/N\,$\ge25$, validation sources; 95\% source bootstrap.}
+\caption{Recall at 1\% FPR (lensed vs repeat + impostor), S/N\,$\ge25$; fixed split: validation sources; grouped folds: out-of-fold over the 60
+development sources; 95\% source bootstrap.}
 \label{tab:main}
 \centering
 \setlength{\tabcolsep}{2.5pt}
@@ -230,11 +233,11 @@ Method & Fixed split (3 seeds) & Grouped folds (OOF) & AUC \\
 \midrule
 (1) Cross-correlation & 0.171 [0.115, 0.245] & -- & 0.885 \\
 (2) Physics fit & 0.164 [0.119, 0.235] & -- & 0.931 \\
-(3) Feature GBM & 0.285 [0.180, 0.401] & 0.246 [0.199, 0.297] & 0.928 \\
+(3) Feature GBM & 0.285 [0.180, 0.401] & 0.246 [0.199, 0.297] & 0.925 \\
 (4) Two-channel CNN & 0.423 / 0.409 / 0.407 & -- & 0.959 \\
 (5) Classic Siamese & 0.500 / 0.559 / 0.541 & -- & 0.976 \\
 (7) Cross-attention & 0.471 / 0.013$^a$ / 0.579 & -- & 0.976 \\
-(6) Ours & \textbf{0.701 / 0.698 / 0.684} & \textbf{0.467 [0.253, 0.662]} & \textbf{0.986} \\
+(6) Ours & \textbf{0.701 / 0.698 / 0.684} & \textbf{0.467 [0.253, 0.662]} & \textbf{0.987} \\
 \midrule
 (6) $-$ (3), paired & +0.394 [+0.226, +0.542] & +0.220 [+0.035, +0.381] & \\
 (6), second machine$^b$ & \ReproSeeds & -- & 0.984--0.987 \\
@@ -245,8 +248,8 @@ seed 0 inside the pre-registered range 0.66--0.72, the mean 0.05 below the origi
 \end{table}
 
 \textbf{Main result.} Every learned model beats the physics and feature baselines, and model 6 leads all of them
-(Table~\ref{tab:main}): +0.39 recall over the GBM on the fixed split and +0.22 [+0.04, +0.38] in grouped folds, where every
-source is unseen. A gap of this size at near-equal AUC (0.976--0.986 for the learned models) shows that the gain lies in the
+(Table~\ref{tab:main}): +0.39 recall over the GBM on the fixed split and +0.22 [+0.04, +0.38] in the grouped-fold rehearsal, where
+every source is unseen; recall varies by fold (0.12--0.73), and the lowest fold is set by one source with two bursts. A gap of this size at near-equal AUC (0.976--0.987 for the learned models) shows that the gain lies in the
 low-false-positive tail that a search uses.
 
 \begin{figure}[t]
@@ -265,7 +268,7 @@ unseen sources correctly, while its confusion of repeat and unrelated pairs on u
 seen ones) shows that part of its capacity memorises source identity, which does not affect the lensed score.
 
 \begin{table}[t]
-\caption{Ablations of model 6, three seeds each: seed-mean recall at 1\% FPR and paired difference from the full model
+\caption{Ablations of model 6 on the second machine, three seeds each: seed-mean recall at 1\% FPR and paired difference from the full model
 (validation bright set, 95\% source bootstrap).}
 \label{tab:abl}
 \centering
@@ -308,8 +311,8 @@ Frozen-set hashes & reference & 7/7 match \\
 \end{tabular}}
 \end{table}
 
-\textbf{Real-data validation.} On the \SthreeNpairs\ real cross-source pairs of the validation sources, all 15 trained models
-and baselines meet the twin-threshold criterion once short real windows are filled with off-pulse noise like the simulated
+\textbf{Real-data validation.} On the \SthreeNpairs\ real cross-source pairs of the validation sources, all 12 trained models
+and 3 baselines meet the twin-threshold criterion once short real windows are filled with off-pulse noise like the simulated
 backgrounds, and model 6's real-to-twin rank correlation reaches the twin-to-twin ceiling on both machines
 (Table~\ref{tab:real}). Before the fill, model 6 flagged real pairs whose windows shared the same zero-padded edges; the twin
 test exposed this format mismatch, which the fill removes. Two copies of a real burst, with its fine structure, are recognised
@@ -375,7 +378,7 @@ BURSTT~\cite{Ho2023}.
 Simulated false-positive rates rank methods, but deployment thresholds must come from real negatives, and twin matching is
 what makes such a check interpretable: it separates simulation gaps from differences in sample composition, and it exposed
 a real-versus-simulated format mismatch that no simulated benchmark would show. The limitations are equally concrete. The
-results are development results, because the test split is sealed until the team signs off the propagation model. The
+results are development results, because the test split is sealed until the team signs off the propagation model, and the grouped-fold numbers are a rehearsal on development sources. The
 second machine reproduced the data bit for bit but placed model 6 about 0.05 recall below the original seeds, for reasons not
 yet isolated. Lenses are singular isothermal spheres, impostor strength rests on a simulation choice, and the validation set
 holds 26 sources.
