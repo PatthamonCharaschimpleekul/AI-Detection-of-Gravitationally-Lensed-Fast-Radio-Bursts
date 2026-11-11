@@ -45,3 +45,6 @@ The rule's branch is: "S improves the 3 ms recall but misses 0.8 → report both
 ## Not done
 - The GBM and baselines are not in the sweep.
 - The S checkpoints are kept in `outputs/m6_s*_S` (gitignored) but are not used further.
+
+## Correction 2026-11-11 17:00
+"The limit is mostly physical" is withdrawn. The physics-fit baseline keeps its recall up to τ₆₀₀ = 3 ms, so strongly scattered copies are still identifiable by a method that models scattering explicitly. Model 6's loss is a model limit. See [update 1700](2026-11-11_1700_baseline-scattering-sweep-and-signoff.md).
