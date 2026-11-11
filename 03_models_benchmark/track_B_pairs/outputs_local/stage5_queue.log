@@ -1,0 +1,59 @@
+stage5 begin (benchmark-v1 ccbd35a) 22:25
+start m6 f0 22:25
+end m6 f0: fold 0: tail loss 0.5005 collapsed False; held-out recall 0.861 22:58
+start gbm f0 22:58
+end gbm f0: fold 0: b3_gbm held-out recall 0.287 23:03
+start m6 f1 23:03
+end m6 f1: fold 1: tail loss 0.4867 collapsed False; held-out recall 0.189 23:33
+start gbm f1 23:33
+end gbm f1: fold 1: b3_gbm held-out recall 0.160 23:38
+start m6 f2 23:38
+end m6 f2: fold 2: tail loss 0.5041 collapsed False; held-out recall 0.576 00:09
+start gbm f2 00:09
+end gbm f2: fold 2: b3_gbm held-out recall 0.253 00:14
+start m6 f3 00:14
+end m6 f3: fold 3: tail loss 0.5104 collapsed False; held-out recall 0.457 00:45
+start gbm f3 00:45
+end gbm f3: fold 3: b3_gbm held-out recall 0.166 00:50
+start m6 f4 00:50
+end m6 f4: fold 4: tail loss 0.5062 collapsed False; held-out recall 0.449 01:21
+start gbm f4 01:21
+end gbm f4: fold 4: b3_gbm held-out recall 0.264 01:26
+primary done 01:26
+start m5 f0 01:26
+start fixed-split 01:27
+end fixed-split 01:39
+start transfer-folds 01:39
+end m5 f0: fold 0: tail loss 0.5787 collapsed False; held-out recall 0.661 02:06
+start m5 f1 02:06
+end transfer-folds 02:32
+end m5 f1: fold 1: tail loss 0.5712 collapsed False; held-out recall 0.096 02:42
+start m5 f2 02:42
+end m5 f2: fold 2: tail loss 0.5754 collapsed False; held-out recall 0.627 03:14
+start m5 f3 03:14
+end m5 f3: fold 3: tail loss 0.6013 collapsed False; held-out recall 0.343 03:46
+start m5 f4 03:46
+end m5 f4: fold 4: tail loss 0.5688 collapsed False; held-out recall 0.476 04:17
+start m4 f0 04:17
+end m4 f0: fold 0: tail loss 0.8197 collapsed False; held-out recall 0.266 04:49
+start m4 f1 04:49
+resume 12:28 after the previous session ended during m4 f1 (step 17000; rerun from scratch, same seed)
+stage5 begin (benchmark-v1 ccbd35a) 12:28
+skip m6 f0 12:28
+skip gbm f0 12:28
+skip m6 f1 12:28
+skip gbm f1 12:28
+skip m6 f2 12:28
+skip gbm f2 12:28
+skip m6 f3 12:28
+skip gbm f3 12:28
+skip m6 f4 12:28
+skip gbm f4 12:28
+primary done 12:29
+skip m5 f0 12:29
+skip m5 f1 12:29
+skip m5 f2 12:29
+skip m5 f3 12:29
+skip m5 f4 12:29
+skip m4 f0 12:29
+start m4 f1 12:29

@@ -44,16 +44,26 @@ def main():
         out["RealBurstRepro"] = r"\pending{second-machine real-burst reproduction running}"
     # Compact forecast rows (CHIME vs all-sky, Catalog 2 and 10 yr, without/with magnification bias).
     sys.path.insert(0, str(HERE.parent / "paper"))
-    from make_numbers import sci, track_c
+    from make_numbers import track_c
+
+    def sci1(x):
+        """One significant figure: reruns of the forecast scatter by tens of percent (update 2026-11-11_0900)."""
+        m, e = f"{x:.0e}".split("e")
+        return rf"${m}\times10^{{{int(e)}}}$"
+
     rows = []
     for lab, tag in (("Catalog 2, as observed", ""), (r"Catalog 2, $\gamma=1.5$", "_bias15"), ("10-yr survey", "_10yr"),
                      (r"10-yr survey, $\gamma=1.5$", "_10yr_bias15")):
         d = track_c(tag)
         if d:
-            rows.append(f"{lab} & {sci(d['chime'])} & {sci(d['chime_echo'])} & {sci(d['allsky'])} \\\\")
+            rows.append(f"{lab} & {sci1(d['chime'])} & {sci1(d['chime_echo'])} & {sci1(d['allsky'])} \\\\")
     out["ForecastCompact"] = "\n".join(rows) if rows else r"\pending{forecast}"
+    base, bias = track_c(""), track_c("_bias15")
+    if base and bias:
+        out["NexpLo"], out["NexpHi"] = sci1(base["chime"]), sci1(bias["chime"])
+        out["GainAllSkyOne"] = f"{round(base['allsky'] / base['chime'], -1):.0f}"
     keys = ["SthreeNpairs", "SthreeTeamMsix", "AblNoalignR", "AblNoalignD", "AblNoimpR", "AblNoimpD", "AblHardnegR",
-            "AblHardnegD", "SthreeRepro", "RealBurstRepro", "ForecastCompact"]
+            "AblHardnegD", "SthreeRepro", "RealBurstRepro", "ForecastCompact", "NexpLo", "NexpHi", "GainAllSkyOne"]
     (HERE / "numbers_icaiic.tex").write_text("".join(f"\\newcommand{{\\{k}}}{{{out.get(k, rf'\pending{{{k}}}')}}}\n" for k in keys))
     print((HERE / "numbers_icaiic.tex").read_text())
 

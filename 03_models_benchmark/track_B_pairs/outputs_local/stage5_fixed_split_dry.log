@@ -1,0 +1,22 @@
+val: baselines scored (4000 pairs)
+val: model 6 scored
+Stage 5 secondaries on the fixed split (opened at benchmark-v1; one run)
+
+val: 1000 lensed, 2000 repeat+impostor, 26 sources
+  method    recall@1%          95% CI    AUC rec@0.1%   frozen val thr: recall / realised FPR
+  b1_blk16      0.071 [0.050, 0.103]  0.788    0.025   0.028 / 0.0015
+  b2_blk16      0.043 [0.013, 0.077]  0.822    0.002   0.556 / 0.1805
+  b3_gbm        0.176 [0.135, 0.251]  0.864    0.086   0.091 / 0.0015
+  m6_s0         0.561 [0.402, 0.727]  0.969    0.146   0.464 / 0.0070
+  m6_s1         0.538 [0.368, 0.692]  0.964    0.139   0.458 / 0.0075
+  m6_s2         0.483 [0.340, 0.685]  0.966    0.149   0.393 / 0.0050
+  model 6 (3 seeds) - b3_gbm: +0.351 [+0.193, +0.495]  win (lower bound > 0)
+  per-S/N recall at 1% FPR (bin-wise threshold): [10,15)  [15,25)  [25,50)  [50,inf)
+    b1_blk16  0.078  0.079  0.139  0.273   (lensed per bin: 529 / 330 / 108 / 33)
+    b2_blk16  0.019  0.091  0.167  0.545   (lensed per bin: 529 / 330 / 108 / 33)
+    b3_gbm    0.121  0.182  0.528  0.576   (lensed per bin: 529 / 330 / 108 / 33)
+    m6_s0     0.457  0.603  0.741  1.000   (lensed per bin: 529 / 330 / 108 / 33)
+    m6_s1     0.406  0.706  0.824  0.909   (lensed per bin: 529 / 330 / 108 / 33)
+    m6_s2     0.371  0.579  0.722  0.818   (lensed per bin: 529 / 330 / 108 / 33)
+  negatives above the 1% threshold, b3_gbm: imp:I1 9/339  imp:I1+I2 5/336  imp:I2 1/325  repeat 5/1000
+  negatives above the 1% threshold, m6_s0: imp:I1 11/339  imp:I1+I2 8/336  imp:I2 1/325  repeat 0/1000

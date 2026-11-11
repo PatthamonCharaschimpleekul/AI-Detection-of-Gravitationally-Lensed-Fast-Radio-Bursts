@@ -286,7 +286,7 @@ def fig_concept():
     for d in range(days):
         b.append(text(ax0 + per * (d + 0.5), 168, f"day {d + 1}", "tx", "middle"))
     b.append(rect(ax0, 173, ax1 - ax0, 34, fill=GREY_SOFT, stroke="none", rx=4))
-    b.append(text((ax0 + ax1) / 2, 186, "p_align ≈ 2 × window / T_sid ≈ 1.8% of lenses", "t", "middle"))
+    b.append(text((ax0 + ax1) / 2, 186, "p_align ≈ 2 × window / T_sid ≈ 2% of lenses", "t", "middle"))
     b.append(text((ax0 + ax1) / 2, 201, "the same for all bursts of a source: all copies or none", "tx", "middle"))
     b.append(rect(ax0 + 2, 40, 9, 7, fill=ORANGE_SOFT, stroke="none", rx=1) + text(ax0 + 14, 46, "transit window", "tx"))
     b.append(f'<line x1="{ax0 + 80}" y1="{47}" x2="{ax0 + 80}" y2="{40}" stroke="{BLUE}" stroke-width="2"/>' + text(ax0 + 84, 46, "recorded burst", "tx"))
@@ -351,10 +351,10 @@ def fig_workflow(reals, pairs):
     b.append(rect(364, 152, 136, 20, fill=BLUE_SOFT, stroke="none", rx=4))
     b.append(text(432, 165, "259k parameters", "t", "middle", f'fill="{BLUE}"'))
     # 4: validation rows
-    rows = [("Real cross-source pairs", "vs per-pair twins", "FPR \u2264 1.5%"),
+    rows = [("Blind test, all 80 sources", "pre-registered folds", "+0.23 recall"),
+            ("Real cross-source pairs", "vs per-pair twins", "FPR \u2248 1%"),
             ("Real-burst copies", "vs template copies", "ratio 0.97"),
-            ("Second-machine rerun", "data, sets, training", "7/7 hashes"),
-            ("Grouped folds, sealed test", "pre-registered protocol", "OOF +0.22")]
+            ("Second-machine rerun", "data, sets, training", "7/7 hashes")]
     for k, (a, s_, badge) in enumerate(rows):
         y = 34 + k * 36
         b.append(rect(528, y, 176, 30, fill="#ffffff", stroke=LINE, rx=4))
@@ -367,7 +367,7 @@ def fig_workflow(reals, pairs):
     b.append(f'<circle cx="18" cy="210" r="8" fill="{INK}"/>' + text(18, 213.5, "5", "tx", "middle", 'fill="#fff" font-weight="bold"'))
     b.append(text(32, 205, "Deployment: where can the detector work?", "th"))
     b.append(text(32, 220, "Timing test on burst lists (false alarms checked on 166,000 scrambles) and survey-geometry simulation "
-                           "→ copies are recorded for only ~1.8% of lenses at a transit telescope;", "ts"))
+                           "→ copies are recorded for only ~2% of lenses at a transit telescope;", "ts"))
     b.append(text(32, 230, "an all-sky monitor watching the same sources would find ~50× more lensed repeaters.", "ts"))
     page("fig_workflow", W, H, "\n".join(b), "Workflow")
 

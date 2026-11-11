@@ -1,7 +1,9 @@
 """Recall at 1% FPR (lensed vs repeat + impostor) by pair minimum S/N on the frozen val set (validation sources).
 Baselines from the team's Stage 1 scores (outputs/scores_val.npz, rerun on this machine); model 6 = this machine's three
 seeds, scored here. Usage: python make_snr_curve.py -> fig_snr.pdf, snr_curve.txt
-       python make_snr_curve.py --from-txt   -> fig_snr.pdf redrawn from snr_curve.txt (no GPU, no checkpoints)"""
+       python make_snr_curve.py --from-txt   -> fig_snr.pdf redrawn from snr_curve.txt (no GPU, no checkpoints)
+       python make_snr_curve.py --test       -> fig_snr.pdf from the Stage 5 test set (stage5_fixed_split.txt, 20 test-split
+                                                sources), with model 6 on the validation set (snr_curve.txt) dashed for reference"""
 import sys
 from pathlib import Path
 
@@ -28,6 +30,24 @@ def from_txt():
         curves[name] = [float(v) for v in vals]
     assert len(curves) == 6 and all(len(v) == len(BINS) for v in curves.values()), curves
     plot(curves)
+
+
+def from_test():
+    """Per-S/N recall on the frozen test set, read from the Stage 5 fixed-split report (one run at benchmark-v1)."""
+    rep = (TB / "02_benchmark" / "outputs" / "stage5_fixed_split.txt").read_text()
+    blk = rep.split("\ntest: ")[1].split("\nstress:")[0]
+    names = {"b1_blk16": "Cross-corr. (16)", "b2_blk16": "Physics fit (16)", "b3_gbm": "Feature GBM",
+             "m6_s0": "Model 6 s0", "m6_s1": "Model 6 s1", "m6_s2": "Model 6 s2"}
+    curves = {}
+    for line in blk.split("per-S/N recall")[1].splitlines()[1:]:
+        f = line.split()
+        if f and f[0] in names:
+            curves[names[f[0]]] = [float(v) for v in f[1:5]]
+    assert len(curves) == 6, curves
+    val = {}
+    for line in (HERE / "snr_curve.txt").read_text().splitlines()[2:]:
+        val[line[:18].strip()] = [float(v) for v in line[18:].split()]
+    plot(curves, np.mean([val[f"Model 6 s{s}"] for s in range(3)], 0))
 
 
 def main():
@@ -68,7 +88,7 @@ def main():
     plot(curves)
 
 
-def plot(curves):
+def plot(curves, val_m6=None):
     x = np.arange(len(BINS))
     fig, ax = plt.subplots(figsize=(3.4, 2.5))
     greys = ["#b9b8b3", "#85847f", INK]
@@ -77,6 +97,8 @@ def plot(curves):
     m = np.array([curves[f"Model 6 s{s}"] for s in range(3)])
     ax.fill_between(x, m.min(0), m.max(0), color=BLUE, alpha=0.18, lw=0)
     ax.plot(x, m.mean(0), "-o", color=BLUE, lw=2, ms=4.5, mec="white", mew=0.8, label="Model 6 (3 seeds)")
+    if val_m6 is not None:
+        ax.plot(x, val_m6, "--", color=BLUE, lw=1.1, alpha=0.75, label="Model 6, validation")
     ax.set_xticks(x, ["10–15", "15–25", "25–50", "≥50"])
     ax.set_xlabel("Pair minimum S/N")
     ax.set_ylabel("Recall at 1% FPR")
@@ -92,4 +114,4 @@ def plot(curves):
 
 
 if __name__ == "__main__":
-    from_txt() if "--from-txt" in sys.argv else main()
+    from_test() if "--test" in sys.argv else from_txt() if "--from-txt" in sys.argv else main()

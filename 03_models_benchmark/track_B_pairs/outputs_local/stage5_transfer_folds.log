@@ -1,0 +1,19 @@
+fold 0: 436 held-out files, 16 sources, 29891 cross-source pairs, scoring 4000
+fold 1: 192 held-out files, 16 sources, 12105 cross-source pairs, scoring 4000
+fold 2: 118 held-out files, 16 sources, 5987 cross-source pairs, scoring 4000
+fold 3: 76 held-out files, 16 sources, 2585 cross-source pairs, scoring 2585
+fold 4: 115 held-out files, 16 sources, 5606 cross-source pairs, scoring 4000
+Stage 5 transfer on held-out fold sources (scheme all): 18585 real cross-source pairs (<= 4000 per fold, seeded subset), 5 twins each, 80 sources
+criterion: real FPR <= 2% at the twins' 99% quantile, threshold per fold, hits pooled; CI = source bootstrap
+
+bin [10,25): 15113 real pairs
+  b1_blk16  0.010 [0.007, 0.015]  PASS   Spearman real~twin +0.91 / ceiling +0.86
+  b2_blk16  0.006 [0.002, 0.012]  PASS   Spearman real~twin +0.90 / ceiling +0.85
+  b3_gbm    0.010 [0.007, 0.013]  PASS   Spearman real~twin +0.86 / ceiling +0.82
+  m6        0.010 [0.007, 0.014]  PASS   Spearman real~twin +0.86 / ceiling +0.81
+
+bin >=25 (headline): 3472 real pairs
+  b1_blk16  0.009 [0.004, 0.016]  PASS   Spearman real~twin +0.96 / ceiling +0.93
+  b2_blk16  0.007 [0.002, 0.013]  PASS   Spearman real~twin +0.96 / ceiling +0.93
+  b3_gbm    0.009 [0.003, 0.016]  PASS   Spearman real~twin +0.90 / ceiling +0.87
+  m6        0.010 [0.005, 0.018]  PASS   Spearman real~twin +0.91 / ceiling +0.90
