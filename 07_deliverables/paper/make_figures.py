@@ -15,7 +15,10 @@ POP = ROOT / "01_semi_synthetic_data" / "02_population" / "outputs"
 BLUE, ORANGE, INK, INK2, GRID = "#2a78d6", "#eb6834", "#0b0b0b", "#52514e", "#e4e3df"
 plt.rcParams.update({"font.size": 8, "axes.edgecolor": INK2, "axes.labelcolor": INK, "xtick.color": INK2,
                      "ytick.color": INK2, "axes.spines.top": False, "axes.spines.right": False,
-                     "axes.grid": True, "grid.color": GRID, "grid.linewidth": 0.6, "axes.axisbelow": True})
+                     "axes.grid": True, "grid.color": GRID, "grid.linewidth": 0.6, "axes.axisbelow": True,
+                     # Type 42 (TrueType) fonts and the paper's serif face: IEEE PDF checks reject Type 3 fonts
+                     "pdf.fonttype": 42, "ps.fonttype": 42, "font.family": "serif",
+                     "font.serif": ["Times New Roman", "Nimbus Roman", "DejaVu Serif"], "mathtext.fontset": "stix"})
 
 
 def rows(path):

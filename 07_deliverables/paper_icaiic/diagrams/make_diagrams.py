@@ -187,16 +187,22 @@ def pair_images(T, src, ok):
             "unrelated": (member(T[a], 0, seed=7), member(T[oth], 0, seed=8))}
 
 
-def dispersed(seed, dm_shape=1.0, scint=0.0, width=1.6, amp=1.0, nf=36, nt=56, t0=10):
-    """Cold-plasma sweep, t(nu) ~ nu^-2, drawn on noise; rows from 800 MHz (top) to 400 MHz."""
+def dispersed(seed, dm_shape=1.0, scint=0.0, width=1.6, amp=1.0, scat=0.0, nf=36, nt=56, t0=10):
+    """Cold-plasma sweep, t(nu) ~ nu^-2, drawn on noise; rows from 800 MHz (top) to 400 MHz.
+    scat: scattering time at 400 MHz in samples, tau ~ nu^-4 (one-sided exponential tail)."""
     r = np.random.default_rng(seed)
     nu = np.linspace(0.8, 0.4, nf)
     delay = (nu ** -2 - 0.8 ** -2) / (0.4 ** -2 - 0.8 ** -2) * (nt - 2 * t0) * dm_shape
     t = np.arange(nt)
     gain = 1 + scint * r.normal(size=nf)
-    img = amp * np.exp(-0.5 * ((t[None] - t0 - delay[:, None]) / width) ** 2) * np.clip(gain, 0.2, None)[:, None]
+    img = np.exp(-0.5 * ((t[None] - t0 - delay[:, None]) / width) ** 2)
+    if scat:
+        for i, tau in enumerate(scat * (0.4 / nu) ** 4):
+            k = np.exp(-np.arange(nt) / tau)
+            img[i] = np.convolve(img[i], k / k.sum())[:nt]  # flux kept, so the peak drops as the tail grows
+    img = amp * img * np.clip(gain, 0.2, None)[:, None]
     img += r.normal(0, 0.16, img.shape)
-    return np.clip(img / (amp * 1.05), 0, 1)
+    return np.clip(img / 1.05, 0, 1)  # same noise scale for every copy, so a fainter copy looks fainter
 
 
 # ----------------------------------------------------------------------------------------------------------------- figures
@@ -230,17 +236,17 @@ def fig_concept():
     b.append(text(ox, oy + 24, "CHIME", "ts", "middle"))
     # two dispersed copies of one burst at the observer
     c1 = dispersed(11, scint=0.25)
-    c2 = dispersed(12, scint=0.45, amp=0.75, width=1.9)
+    c2 = dispersed(12, scint=0.45, amp=0.7, scat=2.5)
     b.append(tile(386, 34, 56, 44, c1, border=BLUE, bw=1.1))
     b.append(tile(386, 114, 56, 44, c2, border=ORANGE, bw=1.1))
     b.append(text(414, 30, "copy 1", "tx", "middle") + text(414, 170, "copy 2: same burst,", "tx", "middle"))
     b.append(text(414, 179, "new propagation imprint", "tx", "middle"))
-    b.append(text(447, 40, "800", "tx", "start") + text(447, 78, "400", "tx", "start") + text(447, 59, "MHz", "tx"))
+    b.append(text(382, 40, "800", "tx", "end") + text(382, 78, "400", "tx", "end") + text(382, 59, "MHz", "tx", "end"))
     # burst timeline: every burst repeats after the same delay
     ty = 196
     b.append(f'<line x1="22" y1="{ty}" x2="440" y2="{ty}" stroke="{INK2}" stroke-width="0.9" marker-end="url(#ah)"/>')
     b.append(text(436, ty + 11, "time", "tx", "end"))
-    t1 = [38, 66, 82, 131, 170]
+    t1 = [38, 60, 82, 115, 145]  # no burst may sit on another burst's copy (t + dt)
     dt = 132
     for t in t1:
         b.append(f'<line x1="{t}" y1="{ty - 9}" x2="{t}" y2="{ty}" stroke="{BLUE}" stroke-width="2"/>')
@@ -305,13 +311,13 @@ def fig_workflow(reals, pairs):
     b.append(tile(104, 34, 40, 32, reals[3][0], mask=reals[3][1], border="#9a998f"))
     b.append(tile(104, 72, 40, 32, reals[4][0], mask=reals[4][1], border="#9a998f"))
     b.append(text(14, 122, "981 bursts · 83 repeaters", "t"))
-    b.append(text(14, 134, "CHIME/FRB Catalog 2, 400–800 MHz", "ts"))
+    b.append(text(14, 134, "Catalog 2, 400–800 MHz", "ts"))
     b.append(text(14, 150, "→ 950 noise-free templates", "ts"))
     b.append(text(14, 161, "→ 856 real noise backgrounds", "ts"))
     b.append(text(14, 172, "sources split 60/20/20 by source", "tx"))
     # 2: four classes
     names = [("lensed", "same burst twice", BLUE), ("repeat", "two bursts, one source", INK2),
-             ("impostor", "shared envelope / scint.", ORANGE), ("unrelated", "two sources", MUTED)]
+             ("impostor", "shared imprint", ORANGE), ("unrelated", "two sources", MUTED)]
     for k, (nm, sub, col) in enumerate(names):
         gx, gy = 170 + (k % 2) * 86, 32 + (k // 2) * 66
         (ia, ma), (ib, mb) = pairs[nm]
@@ -338,16 +344,16 @@ def fig_workflow(reals, pairs):
     b.append(f'<circle cx="494" cy="{y0 + 28}" r="10" fill="{GREEN_SOFT}" stroke="{GREEN}" stroke-width="0.9"/>')
     b.append(text(494, y0 + 31, "fuse", "tx", "middle"))
     b.append(arrow(481, y0 + 28, 484, y0 + 28))
-    b.append(text(364, y0 + 74, "1. shared encoder, 2-sample time resolution", "tx"))
-    b.append(text(364, y0 + 84, "2. soft time alignment over ±24 samples", "tx"))
+    b.append(text(364, y0 + 74, "1. shared encoder, 2-sample resolution", "tx"))
+    b.append(text(364, y0 + 84, "2. soft alignment over ±24 samples", "tx"))
     b.append(text(364, y0 + 94, "3. fuse |g_A − g_B| and g_A ⊙ g_B", "tx"))
-    b.append(text(364, y0 + 104, "4. 4-class head → lensed score s(A, B)", "tx"))
+    b.append(text(364, y0 + 104, "4. 4-class head → score s(A, B)", "tx"))
     b.append(rect(364, 152, 136, 20, fill=BLUE_SOFT, stroke="none", rx=4))
     b.append(text(432, 165, "259k parameters", "t", "middle", f'fill="{BLUE}"'))
     # 4: validation rows
-    rows = [("Real cross-source pairs", "vs per-pair simulated twins", "FPR \u2264 1.5%"),
+    rows = [("Real cross-source pairs", "vs per-pair twins", "FPR \u2264 1.5%"),
             ("Real-burst copies", "vs template copies", "ratio 0.97"),
-            ("Second-machine rerun", "data, sets, training, checks", "7/7 hashes"),
+            ("Second-machine rerun", "data, sets, training", "7/7 hashes"),
             ("Grouped folds, sealed test", "pre-registered protocol", "OOF +0.22")]
     for k, (a, s_, badge) in enumerate(rows):
         y = 34 + k * 36
@@ -405,7 +411,7 @@ def fig_arch(pairs):
     b.append(f'<polyline points="{pts}" fill="none" stroke="{ORANGE}" stroke-width="1.3"/>')
     k = int(np.argmax(rho))
     b.append(f'<circle cx="{px[k]:.1f}" cy="{112 - 34 * rho[k]:.1f}" r="2" fill="{ORANGE}"/>')
-    b.append(text(cx0 + 52, 122, "ρ(ℓ), ℓ = −24 … +24 samples", "tx", "middle"))
+    b.append(text(cx0 + 52, 122, "ρ(ℓ), lags ±24 samples", "tx", "middle"))
     b.append(arrow(176, 44, cx0 - 1, 70) + arrow(176, 126, cx0 - 1, 108))
     # softmax weights + soft alignment
     sx0 = 316
@@ -436,7 +442,7 @@ def fig_arch(pairs):
     b.append(text(538, 82, "2 conv", "tx", "middle") + text(538, 92, "mean + max", "tx", "middle") + text(538, 102, "pool", "tx", "middle"))
     b.append(arrow(495, 89, 509, 89))
     # correlation profile skip
-    b.append(f'<path d="M248,127 C 260,165 520,170 590,118" stroke="{ORANGE}" stroke-width="0.9" fill="none" stroke-dasharray="3 2" marker-end="url(#aho)"/>')
+    b.append(f'<path d="M248,127 C 260,165 520,170 596,116" stroke="{ORANGE}" stroke-width="0.9" fill="none" stroke-dasharray="3 2" marker-end="url(#aho)"/>')
     b.append(text(420, 165, "correlation profile ρ also feeds the head", "tx", "middle", f'fill="{ORANGE}"'))
     # MLP
     mx = 580
@@ -445,7 +451,7 @@ def fig_arch(pairs):
             yy = 89 + (j - (n - 1) / 2) * 10
             b.append(f'<circle cx="{mx + i * 16}" cy="{yy:.1f}" r="3" fill="#ffffff" stroke="{INK2}" stroke-width="0.8"/>')
     b.append(arrow(567, 89, mx - 5, 89))
-    b.append(text(mx + 16, 120, "MLP", "tx", "middle"))
+    b.append(text(mx + 16, 61, "MLP", "tx", "middle"))  # above the nodes: the profile arrow enters from below
     # outputs
     ox0 = 628
     labs = [("lensed", 0.82, BLUE), ("repeat", 0.08, INK2), ("unrelated", 0.04, MUTED), ("impostor", 0.06, ORANGE)]

@@ -37,3 +37,47 @@
 ## Build (A5)
 - `latexmk -pdf`: 6 pages, no errors, no overfull boxes.
 - Font embedding was not checked on this machine, because `pdffonts` is not installed.
+
+## Addendum 2026-11-11 10:40: fonts, figures and the last page (user: "Fix all 6")
+**Fonts**
+- Every font in the PDF is embedded.
+- The two matplotlib figures used Type 3 fonts (DejaVu Sans), which IEEE PDF checks often reject.
+- `make_snr_curve.py` and `paper/make_figures.py` now write Type 42 fonts in Times New Roman, the paper's face.
+
+**Fig. 4 (S/N curve)**
+- Redrawn from the committed `snr_curve.txt` with the new `--from-txt` mode. The values are the same, and no GPU or checkpoints are needed.
+
+**Fig. 5 (transit): not regenerated on this machine**
+- **Why not:** it needs `track_C_timing/outputs/track_c_sources.csv`, which exists only on the second machine.
+- **Rerun here:** `population.py` and `timing.py` with defaults, and again with `--scrambles 2000`. Neither reproduces the paper's run.
+
+  | Run | Median p_align | CHIME N_exp, timing | All-sky N_exp, timing | Σ τ |
+  |---|---|---|---|---|
+  | Defaults | 1.87% | 3.7e-6 | 2.5e-4 | 2.81e-3 |
+  | `--scrambles 2000` | — | 6.4e-6 | 3.0e-4 | 2.89e-3 |
+  | Paper | 1.8% | 5.3e-6 | 2.6e-4 | 2.9e-3 |
+
+- **Reading:** the forecast carries Monte Carlo scatter of tens of percent between runs. Quoting it to two significant figures overstates its precision.
+- **To do (second machine):** run `python make_figures.py` from its own outputs. The script fix is in.
+- **Local files:** the rerun outputs here are gitignored and are not used by the paper.
+
+**Diagrams (`diagrams/make_diagrams.py`, `common.css`, rendered with Edge headless)**
+- **Fig. 1a timeline:** the copy of the first burst fell on the fifth burst and was hidden, so the Δt arrow pointed at a blue tick. Burst times are now 38, 60, 82, 115, 145, so all five copies are visible and the arrow ends on an orange copy.
+- **Fig. 1a copy 2:** the fainter amplitude was cancelled by a normalisation, so copy 2 looked identical to copy 1. It is now fainter (0.7) and has a ν⁻⁴ scattering tail. The 800/MHz/400 labels moved left of the tile.
+- **Fig. 3:** the "MLP" label moved above the nodes, so the profile arrow no longer hits it.
+- **Small text:** `.tx` went from 8 to 9 units (5.8 pt → 6.5 pt) and `.ts` from 9 to 9.5. Labels that then overflowed were shortened:
+  - "Catalog 2, 400–800 MHz"
+  - "shared imprint"
+  - "shared encoder, 2-sample resolution"
+  - "soft alignment over ±24 samples"
+  - "4-class head → score s(A, B)"
+  - "vs per-pair twins"
+  - "data, sets, training"
+  - "ρ(ℓ), lags ±24 samples"
+
+**Last page**
+- `\IEEEtriggeratref{15}` balances the two reference columns.
+
+**Build**
+- 6 pages, no overfull boxes.
+- The only Type 3 fonts left are in Fig. 5.
