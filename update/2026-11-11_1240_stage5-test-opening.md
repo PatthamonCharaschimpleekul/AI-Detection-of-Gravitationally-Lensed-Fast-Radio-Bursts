@@ -21,7 +21,7 @@
   - Same rules as the team's `stage3_transfer.py`: `fill_window`, 5 twins per pair, threshold at the twins' 99th percentile, criterion ≤ 2%.
   - Each fold's GBM is refitted with the `run_fold` recipe and asserted against `gbm_fK.npz`.
   - **Compute cap (deviation, disclosed):** at most 4000 real pairs per fold, as a seeded random subset; 18,585 pairs in total.
-- **Ablations still running:** models 4, 5, 7 per fold. Model 5 is done; models 4 and 7 are in progress. The session that ran them ended during m4 f1, so the queue was resumed at 12:29 and m4 f1 is being retrained from scratch with the same seed.
+- **Ablations:** models 4, 5, 7 per fold, finished 16:02 (see the addendum). The session that ran them ended during m4 f1, so the queue was resumed at 12:29 and m4 f1 was retrained from scratch with the same seed.
 
 ## Results
 - **Primary (pre-registered): model 6 wins.** OOF recall at 1% FPR, lensed vs repeat + impostor, S/N ≥ 25, pooled threshold, source bootstrap (B = 2000, seed 2026, 80 sources). The sample is 10,000 lensed and 20,000 negatives.
@@ -71,5 +71,26 @@
 - **Deviations (both disclosed):** the test was opened before the `04_propagation` sign-off, and the fold transfer check scores a seeded subset. A change of nuisance ranges by `04_propagation` would now require a new set version and a separately reported rerun.
 
 ## Next
-- When models 4 and 7 finish: run `folds_oof.py --scheme all --models 6,4,5,7`, then update the paper's ablation-by-fold numbers.
 - `unblind-v1` (Phase 5 search on real same-source pairs) is a separate, later team decision. It is not done here.
+
+## Addendum 2026-11-11 16:30: models 4 and 7 on the folds; the team's scattering sweep
+**Ablations by fold (F7 secondary).** Same OOF scores, metric and source bootstrap as the primary. No fold collapsed for model 7 (0 of 5).
+
+| Model | OOF recall [95%] | AUC | Model 6 minus it | It minus GBM |
+|---|---|---|---|---|
+| 6 (ours) | 0.436 [0.226, 0.675] | 0.982 | — | +0.226 [+0.067, +0.403] |
+| 5 classic Siamese | 0.368 | 0.976 | +0.068 [−0.013, +0.154] | +0.158 [+0.031, +0.286] |
+| 4 two-channel CNN | 0.299 [0.218, 0.474] | 0.967 | +0.124 [−0.027, +0.287] | +0.102 [+0.024, +0.213] |
+| 7 cross-attention | 0.264 [0.156, 0.411] | 0.969 | +0.172 [+0.058, +0.307] | +0.054 [−0.011, +0.138] |
+
+- **Ranking holds; not every gap is resolved.** Model 6 is first, but only its lead over model 7 excludes zero.
+- **Paper sentence corrected.** "Every learned model still beats the GBM" is false for model 7 on the folds: its interval includes zero. The paper now says this, both in the main result and in the ablation paragraph.
+
+**Team update 1340 (fetched 16:20): the scattering sweep, and the 04_propagation sign-off not given.**
+- Model 6's recall is 0.98× at a differential τ₆₀₀ of 0.3 ms, 0.57× at 1 ms and 0.13× at 3 ms.
+- The paper's Limitations now state this, with the Wucknitz et al. (2021) lens-disc case. The paper is still 6 pages.
+- **Interaction with this test opening (team decision needed):**
+  - The team's plan 1400 (option B, `--wide-scat` training) would replace model 6 if adopted, and it expected to rerun the rehearsal *before* `benchmark-v1`.
+  - This machine has already opened the test with the current model 6, at a local tag only.
+  - If S is adopted, its test numbers are no longer blind, because the test has been seen. They must be reported as a separate, post-hoc run next to this one, and this run stays the pre-registered result for the current model 6.
+  - Nothing here has been pushed. The team's main branch and tags are untouched.

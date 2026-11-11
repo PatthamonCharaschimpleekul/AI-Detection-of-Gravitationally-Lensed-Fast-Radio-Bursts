@@ -1,0 +1,23 @@
+C:\Users\usEr\AppData\Roaming\Python\Python312\site-packages\triton\windows_utils.py:404: UserWarning: Failed to find CUDA.
+  warnings.warn("Failed to find CUDA.")
+step 1000 loss 1.3739  67s  962 pairs/s
+step 2000 loss 1.1223  131s  978 pairs/s
+step 3000 loss 0.8985  195s  984 pairs/s
+step 4000 loss 0.8156  259s  987 pairs/s
+step 5000 loss 0.7785  324s  989 pairs/s
+step 6000 loss 0.7432  388s  990 pairs/s
+step 7000 loss 0.7240  452s  990 pairs/s
+step 8000 loss 0.6987  517s  990 pairs/s
+step 9000 loss 0.6870  582s  990 pairs/s
+step 10000 loss 0.6662  646s  991 pairs/s
+step 11000 loss 0.6561  710s  992 pairs/s
+step 12000 loss 0.6373  774s  992 pairs/s
+step 13000 loss 0.6265  839s  992 pairs/s
+step 14000 loss 0.6168  903s  992 pairs/s
+step 15000 loss 0.6030  967s  992 pairs/s
+step 16000 loss 0.5998  1032s  993 pairs/s
+step 17000 loss 0.5914  1102s  987 pairs/s
+step 18000 loss 0.5860  1167s  987 pairs/s
+step 19000 loss 0.5891  1231s  987 pairs/s
+step 20000 loss 0.5871  1296s  988 pairs/s
+fold 4: tail loss 0.5871 collapsed False; held-out recall 0.363

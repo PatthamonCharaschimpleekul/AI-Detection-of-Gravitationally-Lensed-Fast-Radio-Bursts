@@ -147,8 +147,9 @@ lensed from repeat pairs. Probes on single-member statistics cannot tell the cla
 
 \textbf{Splits and frozen sets.} Sources are split 60/20/20 into train, validation and test. Validation and test sets of
 4000 pairs, and ``bright'' sets with pair minimum S/N\,$\ge25$ (the pre-registered headline bin), are regenerated from fixed
-seeds and checked against stored SHA-256 hashes. The test split stays sealed under a pre-registered blind protocol; all
-numbers below are development results on sources never used in training.
+seeds and checked against stored SHA-256 hashes. The test split stayed sealed under a pre-registered blind protocol until
+the single test run (Section~\ref{sec:validation}); validation numbers are development results on sources never used in
+training.
 
 \section{Siamese Correlation Network}
 \label{sec:method}
@@ -257,8 +258,8 @@ machine, whose validation recall is 0.05 lower (\ReproSeeds), so this column is 
 against \OofGBM\ for the GBM, a paired gain of \OofDiff\ whose lower bound is above zero (Table~\ref{tab:main}). With a
 separate threshold per fold the recalls are \OofPerFoldSix\ and \OofPerFoldGBM, so the pooled threshold costs model 6 more
 than the GBM. The gain agrees with the development rehearsal (\DiffOOF) and appears on every set: +0.39 on validation and
-\TbDiff\ on the 20 sealed test sources, where model 6 is represented by second-machine seeds. Every learned model beats the
-physics and feature baselines. A gap of this size at similar AUC (\OofAucSix\ against \OofAucGBM) shows that the gain lies in
+\TbDiff\ on the 20 sealed test sources, where model 6 is represented by second-machine seeds. On validation every learned
+model beats the physics and feature baselines; over the 80 sources all do except cross-attention, whose margin includes zero. A gap of this size at similar AUC (\OofAucSix\ against \OofAucGBM) shows that the gain lies in
 the low-false-positive tail that a search uses. With 16 sources per fold, recall varies between folds (\OofFoldRangeSix\ for
 model 6, \OofFoldRangeGBM\ for the GBM), which the source bootstrap carries into the interval.
 
@@ -266,7 +267,8 @@ model 6, \OofFoldRangeGBM\ for the GBM), which the source bootstrap carries into
 \centering
 \includegraphics[width=\columnwidth]{fig_snr.pdf}
 \caption{Recall at 1\% FPR by pair minimum S/N on the sealed test set (20 test sources; 537, 320, 118 and 25 lensed pairs
-per bin), from the single test run. Model 6: mean and range of three seeds; dashed: the same seeds on the validation set.}
+per bin), from the single test run. Model 6: mean and range of the three second-machine seeds; dashed: the same seeds on
+the validation set.}
 \label{fig:snr}
 \end{figure}
 
@@ -303,7 +305,9 @@ Hard-negative repeats & \AblHardnegR & \AblHardnegD \\
 template-similar repeats helps slightly in every seed, but the interval includes zero, and on a closed-form benchmark this
 scheme biased a learned likelihood ratio low by about 1\,dex, so we do not adopt it without a correction. Among the
 architectures on the 80-source folds, model 6 leads the classic Siamese network by \OofSixMinusFive, the two-channel CNN by
-\OofSixMinusFour\ and cross-attention by \OofSixMinusSeven; every learned model still beats the GBM.
+\OofSixMinusFour\ and cross-attention by \OofSixMinusSeven; only the last interval excludes zero, so the folds support
+the ranking but not every gap. The CNN and the classic Siamese network also beat the GBM (\OofFourMinusGBM,
+\OofFiveMinusGBM); cross-attention does not (\OofSevenMinusGBM).
 
 \begin{table}[t]
 \caption{Real-data validation of model 6: validation sources on two machines, and all 80 sources with the out-of-fold
@@ -388,7 +392,11 @@ what makes such a check interpretable: it separates simulation gaps from differe
 a real-versus-simulated format mismatch that no simulated benchmark would show. Pre-registration made the single test run
 decisive: the criterion, comparator, metric, bootstrap and fold rules were fixed before the test sources were seen, and the
 gain on them matches the development estimate. The limitations are equally concrete. The test was opened before the
-propagation nuisance ranges were formally signed off. The positive class is simulated, so absolute recall depends on the
+propagation nuisance ranges were formally signed off, and a later sweep on validation pairs shows that scattering is the
+range that matters: recall is unchanged up to a differential scattering time between the copies of $\tau_{600}=0.3$\,ms, but
+falls to 0.57 of its value at 1\,ms, the top of the training range, and to 0.13 at 3\,ms. Images seen through a scattering
+lens-galaxy disc~\cite{Wucknitz2021} would therefore be missed; whether wider training recovers them is being tested. The
+positive class is simulated, so absolute recall depends on the
 impostor model and on how faithfully templates represent bursts; the real-burst proxy and the transfer checks bound, but do
 not remove, this dependence. Twenty sources per test set and 16 per fold leave wide intervals. The second machine reproduced
 the data bit for bit but placed model 6 about 0.05 recall below the original seeds, for reasons not yet isolated. Lenses are

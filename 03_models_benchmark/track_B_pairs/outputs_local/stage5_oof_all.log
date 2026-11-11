@@ -1,0 +1,53 @@
+scheme all: 5 folds, 80 sources, 10000 lensed, 20000 negatives (OOF, pooled)
+  m6 fold 0: 0.54 h
+  m6 fold 1: 0.48 h
+  m6 fold 2: 0.50 h
+  m6 fold 3: 0.50 h
+  m6 fold 4: 0.50 h
+  m4 fold 0: 0.51 h
+  m4 fold 1: 0.40 h
+  m4 fold 2: 0.36 h
+  m4 fold 3: 0.36 h
+  m4 fold 4: 0.36 h
+  m5 fold 0: 0.64 h
+  m5 fold 1: 0.58 h
+  m5 fold 2: 0.51 h
+  m5 fold 3: 0.51 h
+  m5 fold 4: 0.51 h
+  m7 fold 0: 0.36 h
+  m7 fold 1: 0.42 h
+  m7 fold 2: 0.45 h
+  m7 fold 3: 0.36 h
+  m7 fold 4: 0.36 h
+
+primary: recall at 1% FPR, pooled threshold, source bootstrap (2000 resamples)
+  b3_gbm  0.211 [0.153, 0.293]
+  m6      0.436 [0.226, 0.675]
+  m4      0.299 [0.218, 0.474]
+  m5      0.368 [0.190, 0.566]
+  m7      0.264 [0.156, 0.411]
+  m6 - b3_gbm: +0.226 [+0.067, +0.403]  half-width 0.168  win (lower bound > 0)
+  m4 - b3_gbm: +0.102 [+0.024, +0.213]  half-width 0.095  win (lower bound > 0)
+  m5 - b3_gbm: +0.158 [+0.031, +0.286]  half-width 0.128  win (lower bound > 0)
+  m7 - b3_gbm: +0.054 [-0.011, +0.138]  half-width 0.074  no win
+
+secondary: per-fold thresholds, recall pooled
+  b3_gbm  0.226
+  m6      0.506
+  m4      0.333
+  m5      0.441
+  m7      0.291
+
+secondary: per-fold recall [source bootstrap within the fold]
+  b3_gbm  f0 0.287 [0.16,0.47]  f1 0.160 [0.07,0.38]  f2 0.253 [0.19,0.32]  f3 0.166 [0.10,0.40]  f4 0.264 [0.20,0.49]
+  m6      f0 0.861 [0.69,0.98]  f1 0.189 [0.05,0.80]  f2 0.576 [0.33,0.91]  f3 0.457 [0.22,0.97]  f4 0.449 [0.31,0.80]
+  m4      f0 0.266 [0.15,0.83]  f1 0.226 [0.09,0.60]  f2 0.407 [0.23,0.69]  f3 0.493 [0.32,0.71]  f4 0.274 [0.16,0.56]
+  m5      f0 0.661 [0.50,0.94]  f1 0.096 [0.03,0.49]  f2 0.627 [0.43,0.84]  f3 0.343 [0.17,0.86]  f4 0.476 [0.33,0.73]
+  m7      f0 0.343 [0.20,0.74]  f1 0.168 [0.08,0.60]  f2 0.319 [0.22,0.55]  f3 0.262 [0.12,0.64]  f4 0.363 [0.22,0.57]
+
+negatives above the pooled 1% threshold, by type
+  b3_gbm  imp:I1 88/3330  imp:I1+I2 84/3247  imp:I2 8/3423  repeat 20/10000
+  m6      imp:I1 96/3330  imp:I1+I2 95/3247  imp:I2 2/3423  repeat 7/10000
+  m4      imp:I1 89/3330  imp:I1+I2 96/3247  imp:I2 4/3423  repeat 11/10000
+  m5      imp:I1 97/3330  imp:I1+I2 91/3247  imp:I2 3/3423  repeat 9/10000
+  m7      imp:I1 93/3330  imp:I1+I2 96/3247  imp:I2 3/3423  repeat 8/10000

@@ -57,3 +57,21 @@ skip m5 f3 12:29
 skip m5 f4 12:29
 skip m4 f0 12:29
 start m4 f1 12:29
+end m4 f1: fold 1: tail loss 0.8437 collapsed False; held-out recall 0.226 12:53
+start m4 f2 12:53
+end m4 f2: fold 2: tail loss 0.8372 collapsed False; held-out recall 0.407 13:16
+start m4 f3 13:16
+end m4 f3: fold 3: tail loss 0.8368 collapsed False; held-out recall 0.493 13:38
+start m4 f4 13:38
+end m4 f4: fold 4: tail loss 0.8127 collapsed False; held-out recall 0.274 14:00
+start m7 f0 14:00
+end m7 f0: fold 0: tail loss 0.6128 collapsed False; held-out recall 0.343 14:23
+start m7 f1 14:23
+end m7 f1: fold 1: tail loss 0.6153 collapsed False; held-out recall 0.168 14:49
+start m7 f2 14:49
+end m7 f2: fold 2: tail loss 0.6333 collapsed False; held-out recall 0.319 15:17
+start m7 f3 15:17
+end m7 f3: fold 3: tail loss 0.6256 collapsed False; held-out recall 0.262 15:40
+start m7 f4 15:40
+end m7 f4: fold 4: tail loss 0.5871 collapsed False; held-out recall 0.363 16:02
+stage5 finished 16:02
