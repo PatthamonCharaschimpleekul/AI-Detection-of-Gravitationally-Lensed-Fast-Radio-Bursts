@@ -172,7 +172,10 @@ def fit_gbm(pool, bandpass=False):
 def run_fold(scheme, k):
     """F5: GBM refitted per fold (same recipe), baselines 1-2 with frozen grids, held-out fold set scored once."""
     from sklearn.ensemble import HistGradientBoostingClassifier
-    assert scheme == "dev", "scheme 'all' opens the test sources: run at Stage 5 only (plan 2026-11-08_0845 F8)"
+    if scheme == "all":  # same gate as train.train_fold
+        import subprocess
+        tag = subprocess.run(["git", "tag", "-l", "benchmark-v1"], capture_output=True, text=True, cwd=HERE).stdout.strip()
+        assert tag == "benchmark-v1", "scheme 'all' opens the test sources: only after the benchmark-v1 tag (plan 2026-11-08_0845 F8)"
     with Pool(16, initializer=init, initargs=((scheme, k),)) as pool:
         tr = run(pool, gbm_jobs("tr", 500 + 2 * k))
         d = run(pool, [("ho", kind_of(i, True), [FOLD_SETS[scheme] + k, i], False, BRIGHT) for i in range(FOLD_N)])
