@@ -36,9 +36,10 @@ only by propagation effects. Recognising such copies among the bursts of repeati
 problem with three difficulties: no real positive example exists, the negatives include adversarial \emph{impostors} that
 share a propagation imprint, and decisions must hold at a 1\% false-positive rate. We build a semi-synthetic benchmark from
 all 981 public dynamic spectra of the 83 repeating sources in the CHIME/FRB Catalog~2, and propose a 259k-parameter Siamese
-network that aligns the two bursts' feature maps with a differentiable correlation layer before fusing them. In a single
-pre-registered blind test over all 80 eligible sources, each scored by a model that never saw it, the network recovers
-\OofSix\ of lensed pairs at 1\% false-positive rate against \OofGBM\ for the best physics- or feature-based baseline, a paired
+network that aligns the two bursts' feature maps with a differentiable correlation layer before fusing them. In a
+pre-registered test over all 80 eligible sources, run once and each source scored by a model that never saw it, the network
+recovers \OofSix\ of lensed pairs at 1\% false-positive rate against \OofGBM\ for the best physics- or feature-based
+baseline within the simulated nuisance ranges, a paired
 gain of \OofDiff; on the 20 sealed test sources alone the gain is \TbDiff. Ablations show that both alignment and impostor
 training are needed. Because the positive class has no real counterpart, we also validate on real data: \SfiveTransferPairs\
 real cross-source pairs, which are true negatives, give a false-positive rate of \SfiveTransferSix\ against per-pair simulated
@@ -82,7 +83,7 @@ This paper makes four contributions (Fig.~\ref{fig:workflow}):
 \item a semi-synthetic pair benchmark built from all public CHIME/FRB Catalog~2 repeater spectra, with impostor negatives
 and frozen, hash-checked evaluation sets;
 \item a Siamese correlation network that aligns feature maps before comparing them, with an ablation study over three seeds;
-\item a pre-registered evaluation for a detector without real positives: one blind test over all sources, true-negative
+\item a pre-registered evaluation for a detector without real positives: one test run over all sources, true-negative
 transfer with per-pair twins, a real-burst positive proxy and an independent reproduction;
 \item an analysis of where such a detector can work, showing that transit telescopes rarely record both copies and that sky
 coverage, not classifier accuracy, limits discovery.
@@ -200,7 +201,8 @@ templates (16 per fold), with frozen settings, one seed per fold and the final c
 by a model that never saw it; a rehearsal on the 60 development sources gave \DiffOOF. The bootstrap uses a pooled threshold
 across folds, which penalises score-scale differences between fold models. The test sources were opened once, after all
 methods were frozen at a version tag. One deviation is disclosed: the test was opened before the nuisance ranges of the
-propagation model were formally signed off, so a later change of those ranges would require a new, separately reported test.
+propagation model were formally signed off; the sign-off that followed kept the ranges and all methods unchanged, so the
+result stands as the pre-registered comparison.
 The fixed-split test sets (20 sources) serve as secondary checks.
 
 \textbf{True-negative transfer.} Two bursts from different sources cannot be lensed copies, so real cross-source pairs are
@@ -280,7 +282,7 @@ I1+I2) and \OofFPrepeat\ are plain repeats: the remaining confusion is the physi
 classifies 95\% of lensed pairs of unseen sources correctly, while its confusion of repeat and unrelated pairs on unseen
 sources (32\% correct against 86\% on seen ones) shows that part of its capacity memorises source identity. Three training
 variants aimed at this memorisation (merging the repeat and unrelated targets, a random bandpass per member, or both) changed
-recall by $-$0.02 to +0.00, with every interval including zero, so the lensed decision does not depend on source identity.
+recall by $-$0.02 to +0.00, with every interval including zero, so reducing the memorisation does not raise recall.
 
 \begin{table}[t]
 \caption{Ablations of model 6 on the second machine, three seeds each: seed-mean recall at 1\% FPR and paired difference from the full model
@@ -394,8 +396,10 @@ decisive: the criterion, comparator, metric, bootstrap and fold rules were fixed
 gain on them matches the development estimate. The limitations are equally concrete. The test was opened before the
 propagation nuisance ranges were formally signed off, and a later sweep on validation pairs shows that scattering is the
 range that matters: recall is unchanged up to a differential scattering time between the copies of $\tau_{600}=0.3$\,ms, but
-falls to 0.57 of its value at 1\,ms, the top of the training range, and to 0.13 at 3\,ms. Images seen through a scattering
-lens-galaxy disc~\cite{Wucknitz2021} would therefore be missed; whether wider training recovers them is being tested. The
+falls to 0.57 of its value at 1\,ms, the top of the training range, and to 0.13 at 3\,ms. Training to 10\,ms does not recover
+it, whereas the physics fit, which models scattering, keeps its recall to 3\,ms, so the loss is a limit of shape-matching
+models; images seen through a scattering lens-galaxy disc~\cite{Wucknitz2021} would be missed, and the detector suits lenses
+with little cold gas, which dominate the lensing optical depth. The
 positive class is simulated, so absolute recall depends on the
 impostor model and on how faithfully templates represent bursts; the real-burst proxy and the transfer checks bound, but do
 not remove, this dependence. Twenty sources per test set and 16 per fold leave wide intervals. The second machine reproduced
@@ -404,7 +408,8 @@ singular isothermal spheres.
 
 \section{Conclusion}
 A small Siamese network that aligns before it compares identifies lensed copies of real FRB spectra about twice as often as
-physics and feature baselines at a 1\% false-positive rate, in a pre-registered blind test over all sources; it passes
+physics and feature baselines at a 1\% false-positive rate within the simulated nuisance ranges, in a pre-registered test
+over all sources run once; it passes
 real-data checks designed for a detector without real positives, and it reproduces on a second machine. The same analysis shows that transit geometry, not classification accuracy, is the bottleneck for finding lensed
 repeaters, which points such detectors to wide-field radio arrays. All inputs are public (CHIME/FRB Catalog~2, DOI
 10.11570/25.0066); code, frozen-set manifests, hashes and pre-registered plans are in the project repository (link withheld
