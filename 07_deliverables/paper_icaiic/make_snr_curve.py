@@ -99,7 +99,7 @@ def plot(curves, val_m6=None):
     ax.plot(x, m.mean(0), "-o", color=BLUE, lw=2, ms=4.5, mec="white", mew=0.8, label="Model 6 (3 seeds)")
     if val_m6 is not None:
         ax.plot(x, val_m6, "--", color=BLUE, lw=1.1, alpha=0.75, label="Model 6, validation")
-    ax.set_xticks(x, ["10–15", "15–25", "25–50", "≥50"])
+    ax.set_xticks(x, ["10 to 15", "15 to 25", "25 to 50", "≥50"])
     ax.set_xlabel("Pair minimum S/N")
     ax.set_ylabel("Recall at 1% FPR")
     ax.set_ylim(0, 1)

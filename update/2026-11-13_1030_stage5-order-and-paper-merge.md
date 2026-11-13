@@ -94,3 +94,25 @@ Every number in the paper was traced to an output file or an update. Every figur
 
 **Open (user):**
 - **Review mode:** the ICAIIC 2027 CFP and submission pages say nothing about blind review. If review is single-blind, the author block ("withheld for review") and the repository link must be filled in before upload.
+
+## Addendum 2026-11-13 14:00: dash removal, plainer prose, final recheck
+**Dashes:** no `--` or `---` is left in the paper text, the tables, the macros or the figures.
+- **Ranges:** written as "400 to 800 MHz", "0.19 to 0.86", "1.5 to 3.4%".
+  - The generators were updated to match: `stage5_numbers.py`, `make_numbers_icaiic.py`, `make_snr_curve.py` (tick labels) and `diagrams/make_diagrams.py` (Fig. 1, Fig. 2).
+- **"methods 1–3":** replaced by the names of the three baselines.
+- **Empty table cells:** left blank, and the captions say "Empty cells were not evaluated".
+- **Table III:** the rank-correlation row is split into "Real-to-twin rank correlation" and "Twin-to-twin ceiling". This needs two new macros: `\SfiveTransferRhoReal` and `\SfiveTransferRhoCeil`.
+- **Dashes kept on purpose:** "Abstract—" and "Index Terms—", citation ranges such as [3]–[5], page ranges in the references, and "——" for a repeated author in [21]. IEEEtran produces all of these as IEEE reference style.
+
+**Prose:** every section was rewritten in plainer language.
+- Shorter sentences, and fewer "X, not Y" constructions and colon-led explanations.
+- The meaning and numbers are unchanged.
+- A token diff against 5b44701 shows the same citations and refs. Its only number changes are:
+  - "1–3", removed;
+  - one "80", removed with a duplicate sentence (see the next list);
+  - one 0.24, added.
+- Two content corrections:
+  - **Main result:** the sentence "every learned model scores above the three baselines over the 80 sources" was removed. Only the GBM was scored out-of-fold, and the ablations paragraph already gives the architecture-versus-GBM intervals.
+  - **Limitations:** "Training to 10 ms does not recover it" became "Extending training to 10 ms raises the 3 ms value only to 0.24" (update 1630: ratio 0.13 → 0.24).
+
+**Build:** 6 pages, 0 overfull boxes, no undefined references, no BibTeX warnings, no Type 3 fonts, all fonts embedded. Every page and figure was checked visually.

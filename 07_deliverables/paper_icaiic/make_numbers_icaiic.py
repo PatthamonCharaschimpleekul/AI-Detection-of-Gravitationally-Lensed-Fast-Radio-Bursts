@@ -11,7 +11,7 @@ OUT = ROOT / "03_models_benchmark" / "track_B_pairs" / "02_benchmark" / "outputs
 
 
 def main():
-    out = {"SthreeNpairs": "3851", "SthreeTeamMsix": "0.8--1.4\\%"}
+    out = {"SthreeNpairs": "3851", "SthreeTeamMsix": "0.8 to 1.4\\%"}
     ab = OUT / "stage4_ablations.txt"
     if ab.exists():
         for key, name in (("noalign", "Noalign"), ("hardneg", "Hardneg"), ("noimp", "Noimp")):
@@ -31,8 +31,8 @@ def main():
         out["SthreeRepro"] = (f"Repeating this check on the second machine with its own model~6 seeds gives "
                               f"{', '.join(f'{100 * f[k]:.1f}' for k in sorted(f))}\\% "
                               f"({npairs.group(1) if npairs else '?'} pairs), all within the limit"
-                              + (f", with rank correlations {min(float(a) for a, _ in rho):.2f}--{max(float(a) for a, _ in rho):.2f} "
-                                 f"against ceilings {min(float(b) for _, b in rho):.2f}--{max(float(b) for _, b in rho):.2f}." if rho else "."))
+                              + (f", with rank correlations {min(float(a) for a, _ in rho):.2f} to {max(float(a) for a, _ in rho):.2f} "
+                                 f"against ceilings {min(float(b) for _, b in rho):.2f} to {max(float(b) for _, b in rho):.2f}." if rho else "."))
     else:
         out["SthreeRepro"] = r"\pending{second-machine Stage 3 reproduction running}"
     rb = OUT / "realburst.txt"

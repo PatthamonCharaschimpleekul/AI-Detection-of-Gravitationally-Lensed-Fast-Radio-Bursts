@@ -252,7 +252,7 @@ def fig_concept():
         b.append(f'<line x1="{t}" y1="{ty - 9}" x2="{t}" y2="{ty}" stroke="{BLUE}" stroke-width="2"/>')
         b.append(f'<line x1="{t + dt}" y1="{ty - 6}" x2="{t + dt}" y2="{ty}" stroke="{ORANGE}" stroke-width="2"/>')
     b.append(f'<path d="M{t1[0]},{ty - 13} L{t1[0] + dt},{ty - 13}" stroke="{INK2}" stroke-width="0.8" marker-start="url(#ah)" marker-end="url(#ah)"/>')
-    b.append(text(t1[0] + dt / 2, ty - 16, "Δt (days–months), identical for every burst", "tx", "middle"))
+    b.append(text(t1[0] + dt / 2, ty - 16, "Δt of days to months, identical for every burst", "tx", "middle"))
     # panel (b): transit alignment
     X0 = 464
     b.append(rect(X0, 4, 248, 206, fill="#ffffff", stroke=LINE, rx=6))
@@ -311,7 +311,7 @@ def fig_workflow(reals, pairs):
     b.append(tile(104, 34, 40, 32, reals[3][0], mask=reals[3][1], border="#9a998f"))
     b.append(tile(104, 72, 40, 32, reals[4][0], mask=reals[4][1], border="#9a998f"))
     b.append(text(14, 122, "981 bursts · 83 repeaters", "t"))
-    b.append(text(14, 134, "Catalog 2, 400–800 MHz", "ts"))
+    b.append(text(14, 134, "Catalog 2, 400 to 800 MHz", "ts"))
     b.append(text(14, 150, "→ 950 noise-free templates", "ts"))
     b.append(text(14, 161, "→ 856 real noise backgrounds", "ts"))
     b.append(text(14, 172, "bursts split 60/20/20, by source", "tx"))

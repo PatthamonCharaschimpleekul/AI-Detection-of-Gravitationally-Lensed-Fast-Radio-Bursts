@@ -77,7 +77,7 @@ def main():
         f = re.search(rf"^\s+{key}\s+f0 .*$", txt.split("per-fold recall")[1], re.M) if "per-fold recall" in txt else None
         if f:
             vals = [float(v) for v in re.findall(r"f\d ([0-9.]+) \[", f.group(0))]
-            out[f"OofFoldRange{name}"] = f"{min(vals):.2f}--{max(vals):.2f}"
+            out[f"OofFoldRange{name}"] = f"{min(vals):.2f} to {max(vals):.2f}"
     # fixed split
     fs = (OUT / "stage5_fixed_split.txt").read_text()
     for set_, key in (("test_bright", "Tb"), ("test", "Te"), ("stress", "St")):
@@ -91,12 +91,12 @@ def main():
         out[f"{key}GBMci"] = g3.group(1)
         out[f"{key}Xcorr"], out[f"{key}Phys"] = rec["b1_blk16"], rec["b2_blk16"]
         out[f"{key}Diff"] = fmt_d(*(float(x) for x in dm.groups()))
-        out[f"{key}AucSix"] = f"{min(float(aucs[f'm6_s{s}']) for s in range(3)):.3f}--{max(float(aucs[f'm6_s{s}']) for s in range(3)):.3f}"
+        out[f"{key}AucSix"] = f"{min(float(aucs[f'm6_s{s}']) for s in range(3)):.3f} to {max(float(aucs[f'm6_s{s}']) for s in range(3)):.3f}"
         out[f"{key}AucGBM"] = aucs["b3_gbm"]
     rr = re.search(r"test_bright: .*?\n(.*?)\n\n", fs, re.S).group(1)
     frz = {k: (a, b) for k, a, b in re.findall(r"^\s+(\S+)\s+[0-9.]+ \[.*?\]\s+[0-9.]+\s+[0-9.]+\s+([0-9.]+) / ([0-9.]+)", rr, re.M)}
     fr = [float(frz[f"m6_s{s}"][1]) for s in range(3)]
-    out["TbFrozenFPRSix"] = f"{100 * min(fr):.1f}--{100 * max(fr):.1f}" + r"\%"
+    out["TbFrozenFPRSix"] = f"{100 * min(fr):.1f} to {100 * max(fr):.1f}" + r"\%"
     out["TbFrozenFPRGBM"] = f"{100 * float(frz['b3_gbm'][1]):.1f}" + r"\%"
     # transfer on held-out folds
     tr = (OUT / "folds_all" / "stage5_transfer.txt").read_text()
@@ -105,6 +105,7 @@ def main():
     m6 = re.search(r"m6\s+([0-9.]+) \[([0-9.]+), ([0-9.]+)\].*?real~twin \+([0-9.]+) / ceiling \+([0-9.]+)", hd)
     out["SfiveTransferSix"] = f"{100 * float(m6.group(1)):.1f}\\% [{100 * float(m6.group(2)):.1f}, {100 * float(m6.group(3)):.1f}]"
     out["SfiveTransferRho"] = f"{m6.group(4)} / {m6.group(5)}"
+    out["SfiveTransferRhoReal"], out["SfiveTransferRhoCeil"] = m6.group(4), m6.group(5)
     gb = re.search(r"b3_gbm\s+([0-9.]+)", hd)
     out["SfiveTransferGBM"] = f"{100 * float(gb.group(1)):.1f}" + r"\%"
     out["SfiveTransferAll"] = "PASS" if "FAIL" not in tr else "FAIL"
@@ -113,7 +114,7 @@ def main():
             "OofFourMinusGBM", "OofSevenMinusGBM", "OofCollapsedMSeven", "OofFPenv", "OofFPrepeat", "OofPerFoldGBM",
             "OofPerFoldSix", "OofFoldRangeSix", "OofFoldRangeGBM", "TbSix", "TbGBM", "TbGBMci", "TbXcorr", "TbPhys", "TbDiff", "TbAucSix", "TbAucGBM", "TeSix", "TeGBM", "TeDiff",
             "StSix", "StGBM", "StDiff", "TbFrozenFPRSix", "TbFrozenFPRGBM", "SfiveTransferPairs", "SfiveTransferSix",
-            "SfiveTransferRho", "SfiveTransferGBM"]
+            "SfiveTransferRho", "SfiveTransferRhoReal", "SfiveTransferRhoCeil", "SfiveTransferGBM"]
     out["OofCollapsedMSeven"] = out.get("OofCollapsedM7", r"\pending{m7}")
     lines = [f"\\newcommand{{\\{k}}}{{{out.get(k, rf'\pending{{{k}}}')}}}" for k in keys]
     (HERE / "numbers_stage5.tex").write_text("\n".join(lines) + "\n")
