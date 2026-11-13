@@ -148,7 +148,7 @@ lensed from repeat pairs. Probes on single-member statistics cannot tell the cla
 
 \textbf{Splits and frozen sets.} Sources are split 60/20/20 into train, validation and test. Validation and test sets of
 4000 pairs, and ``bright'' sets with pair minimum S/N\,$\ge25$ (the pre-registered headline bin), are regenerated from fixed
-seeds and checked against stored SHA-256 hashes. The test split stayed sealed under a pre-registered blind protocol until
+seeds and checked against stored SHA-256 hashes. The test split stayed sealed under the pre-registered protocol until
 the single test run (Section~\ref{sec:validation}); validation numbers are development results on sources never used in
 training.
 
@@ -193,7 +193,7 @@ warm-up steps and cosine decay; the checkpoint is selected on the validation bri
 
 \section{Evaluation Without Real Positives}
 \label{sec:validation}
-\textbf{Pre-registered blind test.} Every choice below was fixed in a written plan before the result it affects. The primary
+\textbf{Pre-registered test.} Every choice below was fixed in a written plan before the result it affects. The primary
 comparison is model 6 against the best of methods 1--3 on the validation set, which is the GBM, and model 6 wins only if the
 lower 95\% bound of the paired recall difference is above zero. Because the validation interval was wide (half-width 0.16),
 a pre-registered trigger replaced the fixed test split by five source-grouped folds over all 80 sources with at least two
@@ -202,12 +202,13 @@ by a model that never saw it; a rehearsal on the 60 development sources gave \Di
 across folds, which penalises score-scale differences between fold models. The test sources were opened once, after all
 methods were frozen at a version tag. One deviation is disclosed: the test was opened before the nuisance ranges of the
 propagation model were formally signed off. The sign-off followed the test, so it was not blind to the result, but it used
-validation pairs only and kept the ranges, the frozen sets and all methods unchanged; the result therefore stands as the
+validation pairs only and kept the ranges, the frozen sets and all methods unchanged (a wide-scattering training variant was
+rejected by a rule fixed before its runs); the result therefore stands as the
 pre-registered comparison.
 The fixed-split test sets (20 sources) serve as secondary checks.
 
 \textbf{True-negative transfer.} Two bursts from different sources cannot be lensed copies, so real cross-source pairs are
-labelled negatives that can be scored without breaking the blind protocol. For each real pair we simulate five
+labelled negatives that can be scored without opening the search on same-source pairs. For each real pair we simulate five
 \emph{twins} from the same two templates at their measured S/N and set $\tau$ at the twins' 99th percentile; the
 pre-registered criterion is a real false-positive rate of at most 2\% per S/N bin. Twin matching matters: with generic
 simulated pairs as reference, cross-correlation seems to fail below S/N\,25 (\BoneLowReal), yet its twins fail as often
