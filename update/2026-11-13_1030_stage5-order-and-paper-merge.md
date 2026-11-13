@@ -55,3 +55,42 @@
 ## Still open (team or user)
 - **Push the `benchmark-v1` tag** (`ccbd35a`, local on the second machine). It needs the user's go-ahead.
 - **Merge `icaiic-stage5-final` into main** (fast-forward), then submit through EDAS by 15 Nov. The author list is still withheld.
+
+## Addendum 2026-11-13 11:00: full audit of the ICAIIC paper
+Every number in the paper was traced to an output file or an update. Every figure was rendered and checked. All 24 references were checked, and four of them were confirmed on the web.
+
+**Factual fixes:**
+| Where | Before | After | Evidence |
+|---|---|---|---|
+| Sensitivity paragraph | "the untrained baselines move up or down" | All methods fall on the test sources, including cross-correlation and the physics fit, so the test sources are harder | Table I: 0.171 → 0.128 and 0.164 → 0.070 (`stage5_fixed_split.txt`) |
+| Main result | "On validation every learned model beats the baselines" | "Every learned model that trained scores above the three baselines ... cross-attention's margin over the GBM includes zero" | Model 7 seed 1 collapsed (0.013); model 4 vs GBM on validation is +0.131 [−0.003, +0.266] (update 0640) |
+| Main result | "at similar AUC" (0.982 vs 0.936) | "The AUCs differ far less" | — |
+| Splits paragraph and Fig. 2 | "Sources are split 60/20/20" | "Whole sources ... 60/20/20 by burst count" | `inject.split_sources`: 26 validation and 20 test sources |
+| Memorisation sentence | "repeat and unrelated pairs ... 32% vs 86%" | Model 6 seed 0, *repeat* pairs, 32% on unseen vs 86% on training sources | update 1130 confusion matrix |
+| Host-DM sentence | "less than this scatter" | "about 20%, within this scatter" | HostSens −19%; the MC scatter SD is about 20% |
+| Fig. 2, panel 4 | "Blind test" | "Pre-registered test, all 80 sources, run once" | — |
+
+**Wording and style fixes:**
+- **Abstract:** "within the simulated nuisance ranges" now qualifies the result rather than the baseline; "sealed" became "held-out".
+- **Prior:** "of order 10⁻⁴ or less", consistent with the quoted τ = 1.5e-4 at z = 1.
+- **Symbol τ:** τ is the score threshold, so the twin threshold is no longer called bare τ.
+- **Cross-reference:** Section VII is now referenced where methods 1–3 are first named.
+- **Fig. 5 caption:** "the approximation (4)".
+- **Thousands separators:** 18,585, 20,000 and 78,701.
+- **American spelling,** per the IEEE style manual. The title now reads "Recognize".
+
+**References:** a separate `references_icaiic.bib` with IEEE journal abbreviations ("Phys. Rev. D", not "PhRvD"). The MNRAS draft keeps `../paper/references.bib`.
+- Chang et al. 2024 is now cited as MNRAS Letters, with doi 10.1093/mnrasl/slae116.
+- Ho et al. 2023 now prints its ApJ doi.
+- The capitalisation of "Canadian" in the CHORD title is protected.
+
+**Verified unchanged:**
+- **Stage 5 macros:** regenerated; the only change is the pair count's separator.
+- **Tables:** Table II matches `stage4_ablations.txt`, including the "every seed" claims. Table III matches `stage3_val.txt`, `realburst.txt` and updates 1520 and 1130.
+- **Track C:** N_exp 5e-6 / 1e-4; 10-yr gain 1.4× and 1.8×; all-sky 50×.
+- **Throughput:** 1149 pairs/s, from the session log.
+
+**Build:** 6 pages, letter size, 0 overfull boxes, no undefined references, no BibTeX warnings, no Type 3 fonts, all fonts embedded.
+
+**Open (user):**
+- **Review mode:** the ICAIIC 2027 CFP and submission pages say nothing about blind review. If review is single-blind, the author block ("withheld for review") and the repository link must be filled in before upload.

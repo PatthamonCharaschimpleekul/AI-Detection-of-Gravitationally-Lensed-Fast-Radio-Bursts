@@ -19,7 +19,7 @@
 
 \begin{document}
 
-\title{Learning to Recognise Gravitationally Lensed Fast Radio Bursts Without Real Positives}
+\title{Learning to Recognize Gravitationally Lensed Fast Radio Bursts Without Real Positives}
 
 \author{\IEEEauthorblockN{Author names withheld for review}
 \IEEEauthorblockA{\textit{Department} \\
@@ -32,18 +32,18 @@ email address or ORCID}
 
 \begin{abstract}
 A fast radio burst (FRB) lensed by a foreground galaxy reaches Earth twice, days to months apart, and the two copies differ
-only by propagation effects. Recognising such copies among the bursts of repeating sources is a pairwise verification
+only by propagation effects. Recognizing such copies among the bursts of repeating sources is a pairwise verification
 problem with three difficulties: no real positive example exists, the negatives include adversarial \emph{impostors} that
 share a propagation imprint, and decisions must hold at a 1\% false-positive rate. We build a semi-synthetic benchmark from
 all 981 public dynamic spectra of the 83 repeating sources in the CHIME/FRB Catalog~2, and propose a 259k-parameter Siamese
 network that aligns the two bursts' feature maps with a differentiable correlation layer before fusing them. In a
 pre-registered test over all 80 eligible sources, run once and each source scored by a model that never saw it, the network
-recovers \OofSix\ of lensed pairs at 1\% false-positive rate against \OofGBM\ for the best physics- or feature-based
-baseline within the simulated nuisance ranges, a paired
-gain of \OofDiff; on the 20 sealed test sources alone the gain is \TbDiff. Ablations show that both alignment and impostor
+recovers, within the simulated nuisance ranges, \OofSix\ of lensed pairs at 1\% false-positive rate against \OofGBM\ for
+the best physics- or feature-based baseline, a paired gain of \OofDiff; on the 20 held-out test sources alone the gain is
+\TbDiff. Ablations show that both alignment and impostor
 training are needed. Because the positive class has no real counterpart, we also validate on real data: \SfiveTransferPairs\
 real cross-source pairs, which are true negatives, give a false-positive rate of \SfiveTransferSix\ against per-pair simulated
-twins, two copies of a real burst are recognised as often as two copies of its template, and the pipeline reproduces on a
+twins, two copies of a real burst are recognized as often as two copies of its template, and the pipeline reproduces on a
 second machine. Finally, survey geometry, not the classifier, limits discovery: a transit telescope records both copies
 for only about 2\% of lenses, and an all-sky monitor would find about \GainAllSkyOne\ times more lensed repeaters from the
 same sources.
@@ -73,10 +73,10 @@ number of sidereal days.}
 
 Finding one is a pairwise verification problem: are two bursts from the same sky position two copies of one burst, or two
 different bursts of a repeating source? Three properties make it hard. \emph{No real positives:} any detector is trained on
-simulation, and its transfer to real data must be checked without labelled positives. \emph{Adversarial negatives:} distinct
+simulation, and its transfer to real data must be checked without labeled positives. \emph{Adversarial negatives:} distinct
 bursts of one source can share a spectral envelope imposed by a plasma lens, or a scintillation pattern, and resemble copies.
-\emph{Low operating point:} the probability that a given repeater is strongly lensed is $10^{-4}$ or less (the lensing
-optical depth is $1.5\times10^{-4}$ even at redshift 1), so decisions must hold at 1\% false-positive rate or below.
+\emph{Low operating point:} the probability that a given repeater is strongly lensed is of order $10^{-4}$ or less (the lensing
+optical depth is $1.5\times10^{-4}$ at redshift 1 and falls steeply nearer), so decisions must hold at 1\% false-positive rate or below.
 
 This paper makes four contributions (Fig.~\ref{fig:workflow}):
 \begin{enumerate}
@@ -103,12 +103,12 @@ gradient boosting~\cite{Goyal2021}, and with a Siamese residual network that fus
 product~\cite{Zhang2026}, which notes the need to adapt to real detector data. FRB lensing searches have used auto- and
 cross-correlation statistics~\cite{Kader2022,Chang2024,Krochek2022}, and machine learning on FRBs has separated repeating from
 non-repeating sources~\cite{Chen2022}; to our knowledge no learned detector of lensed FRB copies exists. Detectors trained on
-simulation are made robust by randomising nuisances~\cite{Tobin2017}, but transfer still has to be shown on real data.
+simulation are made robust by randomizing nuisances~\cite{Tobin2017}, but transfer still has to be shown on real data.
 
 \section{Problem Formulation}
 \label{sec:problem}
 A burst is a dynamic spectrum $X\in\mathbb{R}^{F\times T}$ with $F=256$ frequency channels and $T=160$ time samples of
-0.983\,ms, normalised to unit off-pulse noise. A pair $(A,B)$ of bursts from one sky position has a label
+0.983\,ms, normalized to unit off-pulse noise. A pair $(A,B)$ of bursts from one sky position has a label
 $y\in\{\textsc{l},\textsc{r},\textsc{u},\textsc{i}\}$: lensed copies, repeat (two bursts of one source), unrelated (two
 sources) or impostor (two bursts of one source sharing a propagation imprint). A detector outputs a symmetric score
 $s(A,B)=s(B,A)$, and a pair is flagged if $s>\tau_\alpha$, where $\tau_\alpha$ is the $(1-\alpha)$ quantile of $s$ over
@@ -135,8 +135,8 @@ network scores each pair. (4) Validation uses only real negatives, a real-burst 
 \end{figure*}
 
 \textbf{Real inputs.} We use the Stokes-I dynamic spectra of all 981 bursts of the 83 repeating sources in CHIME/FRB
-Catalog~2~\cite{CHIME2025cat2}, recorded by the CHIME transit telescope~\cite{CHIME2018} at 400--800\,MHz. Each burst is binned to $256\times160$ around its emission and normalised by
-its off-pulse noise. The catalogue's fitted burst models serve as noise-free templates (950 usable), and the off-pulse
+Catalog~2~\cite{CHIME2025cat2}, recorded by the CHIME transit telescope~\cite{CHIME2018} at 400--800\,MHz. Each burst is binned to $256\times160$ around its emission and normalized by
+its off-pulse noise. The catalog's fitted burst models serve as noise-free templates (950 usable), and the off-pulse
 columns of each file, mirror-tiled, serve as real noise backgrounds (856), each with its own channel mask.
 
 \textbf{Pair classes.} A lensed pair places one template twice; a repeat pair, two templates of one source; an unrelated
@@ -146,7 +146,7 @@ Each member is injected at a measured matched-filter signal-to-noise ratio (S/N)
 own time shift ($\pm10$ samples), residual dispersion, scattering and scintillation, so that only burst identity separates
 lensed from repeat pairs. Probes on single-member statistics cannot tell the classes apart (AUC $\le0.53$).
 
-\textbf{Splits and frozen sets.} Sources are split 60/20/20 into train, validation and test. Validation and test sets of
+\textbf{Splits and frozen sets.} Whole sources go to train, validation or test, 60/20/20 by burst count. Validation and test sets of
 4000 pairs, and ``bright'' sets with pair minimum S/N\,$\ge25$ (the pre-registered headline bin), are regenerated from fixed
 seeds and checked against stored SHA-256 hashes. The test split stayed sealed under the pre-registered protocol until
 the single test run (Section~\ref{sec:validation}); validation numbers are development results on sources never used in
@@ -158,14 +158,14 @@ training.
 \centering
 \includegraphics[width=\textwidth]{fig_arch.pdf}
 \caption{Model 6. A weight-shared encoder maps each burst to a $64\times16\times80$ feature map at two-sample time
-resolution. The correlation layer measures the normalised correlation $\rho(\ell)$ over lags of $\pm24$ samples (curve:
+resolution. The correlation layer measures the normalized correlation $\rho(\ell)$ over lags of $\pm24$ samples (curve:
 computed for the pair shown), softmax weights align $g_B$ to $g_A$, and the aligned maps are fused by absolute difference
 and product. The correlation profile also feeds the head. Both directions are computed and averaged.}
 \label{fig:arch}
 \end{figure*}
 
 \textbf{Encoder.} Inputs pass through $\mathrm{asinh}$ to compress the dynamic range of bright bursts. A shared encoder $g$ of
-four $5\times3$ convolution blocks with group normalisation maps $X$ to $g(X)\in\mathbb{R}^{C\times F'\times T'}$ with $C=64$,
+four $5\times3$ convolution blocks with group normalization maps $X$ to $g(X)\in\mathbb{R}^{C\times F'\times T'}$ with $C=64$,
 $F'=16$ and $T'=80$, keeping two-sample time resolution because lensed copies differ by residual time offsets.
 
 \textbf{Correlation and soft alignment.} For lags $\ell\in\{-L,\dots,L\}$ with $L=12$ encoder steps ($\pm24$ samples),
@@ -187,19 +187,19 @@ s(A,B)=\tfrac12\left[\sigma(A,B)+\sigma(B,A)\right],\quad \sigma=z_{\textsc{l}}-
 \end{equation}
 The model has 259k parameters.
 
-\textbf{Training.} All learned models are trained for 20\,000 steps of 64 pairs drawn on the fly from training sources (half
+\textbf{Training.} All learned models are trained for 20{,}000 steps of 64 pairs drawn on the fly from training sources (half
 with S/N floor 10, half 25), with four-class cross-entropy, AdamW (learning rate $10^{-3}$, weight decay $10^{-4}$), 1000
 warm-up steps and cosine decay; the checkpoint is selected on the validation bright set.
 
 \section{Evaluation Without Real Positives}
 \label{sec:validation}
 \textbf{Pre-registered test.} Every choice below was fixed in a written plan before the result it affects. The primary
-comparison is model 6 against the best of methods 1--3 on the validation set, which is the GBM, and model 6 wins only if the
+comparison is model 6 against the best of methods 1--3 (Section~\ref{sec:results}) on the validation set, which is the GBM, and model 6 wins only if the
 lower 95\% bound of the paired recall difference is above zero. Because the validation interval was wide (half-width 0.16),
 a pre-registered trigger replaced the fixed test split by five source-grouped folds over all 80 sources with at least two
 templates (16 per fold), with frozen settings, one seed per fold and the final checkpoint, so that every source is scored
 by a model that never saw it; a rehearsal on the 60 development sources gave \DiffOOF. The bootstrap uses a pooled threshold
-across folds, which penalises score-scale differences between fold models. The test sources were opened once, after all
+across folds, which penalizes score-scale differences between fold models. The test sources were opened once, after all
 methods were frozen at a version tag. One deviation is disclosed: the test was opened before the nuisance ranges of the
 propagation model were formally signed off. The sign-off followed the test, so it was not blind to the result, but it used
 validation pairs only and kept the ranges, the frozen sets and all methods unchanged (a wide-scattering training variant was
@@ -208,8 +208,8 @@ pre-registered comparison.
 The fixed-split test sets (20 sources) serve as secondary checks.
 
 \textbf{True-negative transfer.} Two bursts from different sources cannot be lensed copies, so real cross-source pairs are
-labelled negatives that can be scored without opening the search on same-source pairs. For each real pair we simulate five
-\emph{twins} from the same two templates at their measured S/N and set $\tau$ at the twins' 99th percentile; the
+labeled negatives that can be scored without opening the search on same-source pairs. For each real pair we simulate five
+\emph{twins} from the same two templates at their measured S/N and set the threshold at the twins' 99th percentile; the
 pre-registered criterion is a real false-positive rate of at most 2\% per S/N bin. Twin matching matters: with generic
 simulated pairs as reference, cross-correlation seems to fail below S/N\,25 (\BoneLowReal), yet its twins fail as often
 (\BoneLowTwin), because those real pairs are brighter than generic ones; the failure is sample composition.
@@ -223,8 +223,8 @@ regenerated the frozen sets, retrained model 6 with three seeds and reran the ch
 
 \section{Experiments}
 \label{sec:results}
-\textbf{Baselines.} All methods score the same pairs, averaged over both member orders: (1)~normalised cross-correlation in
-the on-pulse box, maximised over $\pm24$ lags, with 16 channel blocks; (2)~a physics statistic that fits one member to the
+\textbf{Baselines.} All methods score the same pairs, averaged over both member orders: (1)~normalized cross-correlation in
+the on-pulse box, maximized over $\pm24$ lags, with 16 channel blocks; (2)~a physics statistic that fits one member to the
 other over scattering time, residual dispersion, lag and amplitude; (3)~gradient-boosted trees (GBM) on seven measured burst
 properties per member, the best of 1--3 and the pre-registered comparator; (4)~a two-channel CNN; (5)~a classic Siamese
 network comparing embedding vectors; and (7)~cross-attention between time--frequency patches.
@@ -262,29 +262,30 @@ machine, whose validation recall is 0.05 lower (\ReproSeeds), so this column is 
 against \OofGBM\ for the GBM, a paired gain of \OofDiff\ whose lower bound is above zero (Table~\ref{tab:main}). With a
 separate threshold per fold the recalls are \OofPerFoldSix\ and \OofPerFoldGBM, so the pooled threshold costs model 6 more
 than the GBM. The gain agrees with the development rehearsal (\DiffOOF) and appears on every set: +0.39 on validation and
-\TbDiff\ on the 20 sealed test sources, where model 6 is represented by second-machine seeds. On validation every learned
-model beats the physics and feature baselines; over the 80 sources all do except cross-attention, whose margin includes zero. A gap of this size at similar AUC (\OofAucSix\ against \OofAucGBM) shows that the gain lies in
-the low-false-positive tail that a search uses. With 16 sources per fold, recall varies between folds (\OofFoldRangeSix\ for
+\TbDiff\ on the 20 test sources, where model 6 is represented by second-machine seeds. Every learned model that trained
+scores above the three baselines on validation and over the 80 sources, although the margin of cross-attention over the GBM
+includes zero. The AUCs differ far less (\OofAucSix\ against \OofAucGBM), so the gain lies in the low-false-positive tail
+that a search uses. With 16 sources per fold, recall varies between folds (\OofFoldRangeSix\ for
 model 6, \OofFoldRangeGBM\ for the GBM), which the source bootstrap carries into the interval.
 
 \begin{figure}[t]
 \centering
 \includegraphics[width=\columnwidth]{fig_snr.pdf}
-\caption{Recall at 1\% FPR by pair minimum S/N on the sealed test set (20 test sources; 537, 320, 118 and 25 lensed pairs
+\caption{Recall at 1\% FPR by pair minimum S/N on the test set (20 test sources; 537, 320, 118 and 25 lensed pairs
 per bin), from the single test run. Model 6: mean and range of the three second-machine seeds; dashed: the same seeds on
 the validation set.}
 \label{fig:snr}
 \end{figure}
 
-\textbf{Sensitivity and errors.} On the test sources the gain holds in every S/N bin (Fig.~\ref{fig:snr}). Model 6 and the
-GBM both recall less than on validation, as expected for sources that played no part in development (model 6's checkpoints
-and the choice of the GBM as comparator were both made on validation), while the untrained baselines move up or down. At the
+\textbf{Sensitivity and errors.} On the test sources the gain holds in every S/N bin (Fig.~\ref{fig:snr}). All methods recall less
+than on validation (Table~\ref{tab:main}), including the untrained cross-correlation and physics fit, so the test sources are
+harder as well as unused in development (model 6's checkpoints and the choice of the GBM were both made on validation). At the
 pooled 1\% threshold of the primary test, \OofFPenv\ of model 6's false positives are impostors with a shared envelope (I1 or
 I1+I2) and \OofFPrepeat\ are plain repeats: the remaining confusion is the physically hardest case by design. Model 6
-classifies 95\% of lensed pairs of unseen sources correctly, while its confusion of repeat and unrelated pairs on unseen
-sources (32\% correct against 86\% on seen ones) shows that part of its capacity memorises source identity. Three training
-variants aimed at this memorisation (merging the repeat and unrelated targets, a random bandpass per member, or both) changed
-recall by $-$0.02 to +0.00, with every interval including zero, so reducing the memorisation does not raise recall.
+(seed 0) classifies 95\% of lensed pairs of unseen sources correctly, but only 32\% of their repeat pairs, against 86\% on
+training sources, mostly calling them unrelated: part of its capacity memorizes source identity. Three training
+variants aimed at this memorization (merging the repeat and unrelated targets, a random bandpass per member, or both) changed
+recall by $-$0.02 to +0.00, with every interval including zero, so reducing the memorization does not raise recall.
 
 \begin{table}[t]
 \caption{Ablations of model 6 on the second machine, three seeds each: seed-mean recall at 1\% FPR and paired difference from the full model
@@ -340,22 +341,22 @@ Frozen-set hashes & reference & 7/7 match & -- \\
 and 3 baselines meet the twin-threshold criterion once short real windows are filled with off-pulse noise like the simulated
 backgrounds, and model 6's real-to-twin rank correlation reaches the twin-to-twin ceiling on both machines
 (Table~\ref{tab:real}). Before the fill, model 6 flagged real pairs whose windows shared the same zero-padded edges; the twin
-test exposed this format mismatch, which the fill removes. Two copies of a real burst, with its fine structure, are recognised
+test exposed this format mismatch, which the fill removes. Two copies of a real burst, with its fine structure, are recognized
 as often as two copies of its smooth template, and noise-only copies never are, so model 6 does not rely on template
 smoothness or shared noise; the classic Siamese network does (ratio 0.72--0.84). In the test run the same transfer check,
 with each fold's model scoring real pairs of its own held-out sources, passes for model 6 and all three baselines on all 80
 sources
 (\SfiveTransferPairs\ pairs, at most 4000 per fold drawn at random to bound compute). Thresholds frozen on validation, by
-contrast, give a realised false-positive rate of \TbFrozenFPRSix\ for model 6 on the test sources (GBM \TbFrozenFPRGBM), so
+contrast, give a realized false-positive rate of \TbFrozenFPRSix\ for model 6 on the test sources (GBM \TbFrozenFPRGBM), so
 a search must set its thresholds on real negatives.
 
-\textbf{Efficiency.} Model 6 scores 1149 pairs per second in both orders on one RTX~5070~Ti (bfloat16), so all 78\,701
+\textbf{Efficiency.} Model 6 scores 1149 pairs per second in both orders on one RTX~5070~Ti (bfloat16), so all 78{,}701
 same-source pairs of Catalog~2 take about 70\,s.
 
 \section{Survey Geometry: Where Can the Detector Work?}
 \label{sec:geometry}
 A lensed repeater can also be found without a classifier. A galaxy lens fixes $\Delta t$ to far better than the 4\,ms
-catalogue timing, so two burst pairs $(i,j)$, $(k,l)$ of one source with $|\Delta t_{ij}-\Delta t_{kl}|$ below four combined
+catalog timing, so two burst pairs $(i,j)$, $(k,l)$ of one source with $|\Delta t_{ij}-\Delta t_{kl}|$ below four combined
 timing errors already form a significant pattern. We calibrated this timing test on burst lists scrambled by whole sidereal
 days, which keeps each burst's hour angle, and confirmed its false-alarm rate on independent scrambles (\FarHeldOut).
 
@@ -377,7 +378,7 @@ bursts~\cite{ConnorRavi2022}.
 \centering
 \includegraphics[width=0.95\columnwidth]{fig_transit.pdf}
 \caption{Share of lens delays for which CHIME records the copies of a repeater's bursts: the 83 Catalog~2 repeaters
-(simulated with their own burst times, exposure and redshift) and (\ref{eq:palign}) (dashed).}
+(simulated with their own burst times, exposure and redshift) and the approximation (\ref{eq:palign}) (dashed).}
 \label{fig:transit}
 \end{figure}
 
@@ -385,7 +386,7 @@ The expected number of detectable lensed repeaters in the Catalog~2 sample is \N
 magnification bias (slope 1.5), quoted to one significant figure because independent reruns of the Monte Carlo differ by
 tens of percent; a null search is the expected outcome. A 10-year transit survey gains less than a factor of two, because
 the alignment requirement remains, while an all-sky monitor watching the same sources gains about \GainAllSkyOne. Raising the
-median host-galaxy dispersion measure from 68 to 150\,pc\,cm$^{-3}$ changes the yield by less than this scatter. For
+median host-galaxy dispersion measure from 68 to 150\,pc\,cm$^{-3}$ changes the yield by about 20\%, within this scatter. For
 transit surveys, including next-generation drift-scan arrays such as CHORD~\cite{Vanderlinde2019}, the classifier's role is
 to vet the rare single recorded copy and reject impostors; its full value lies with wide-field monitors such as
 BURSTT~\cite{Ho2023}.
@@ -411,13 +412,12 @@ singular isothermal spheres.
 \section{Conclusion}
 A small Siamese network that aligns before it compares identifies lensed copies of real FRB spectra about twice as often as
 physics and feature baselines at a 1\% false-positive rate within the simulated nuisance ranges, in a pre-registered test
-over all sources run once; it passes
-real-data checks designed for a detector without real positives, and it reproduces on a second machine. The same analysis shows that transit geometry, not classification accuracy, is the bottleneck for finding lensed
+run once over all sources; it passes real-data checks designed for a detector without real positives, and it reproduces on a second machine. The same analysis shows that transit geometry, not classification accuracy, is the bottleneck for finding lensed
 repeaters, which points such detectors to wide-field radio arrays. All inputs are public (CHIME/FRB Catalog~2, DOI
 10.11570/25.0066); code, frozen-set manifests, hashes and pre-registered plans are in the project repository (link withheld
 for review).
 
 \bibliographystyle{IEEEtran}
-\bibliography{../paper/references}
+\bibliography{references_icaiic}
 
 \end{document}

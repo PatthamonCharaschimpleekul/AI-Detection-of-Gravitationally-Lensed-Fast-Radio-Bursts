@@ -314,7 +314,7 @@ def fig_workflow(reals, pairs):
     b.append(text(14, 134, "Catalog 2, 400–800 MHz", "ts"))
     b.append(text(14, 150, "→ 950 noise-free templates", "ts"))
     b.append(text(14, 161, "→ 856 real noise backgrounds", "ts"))
-    b.append(text(14, 172, "sources split 60/20/20 by source", "tx"))
+    b.append(text(14, 172, "bursts split 60/20/20, by source", "tx"))
     # 2: four classes
     names = [("lensed", "same burst twice", BLUE), ("repeat", "two bursts, one source", INK2),
              ("impostor", "shared imprint", ORANGE), ("unrelated", "two sources", MUTED)]
@@ -351,7 +351,7 @@ def fig_workflow(reals, pairs):
     b.append(rect(364, 152, 136, 20, fill=BLUE_SOFT, stroke="none", rx=4))
     b.append(text(432, 165, "259k parameters", "t", "middle", f'fill="{BLUE}"'))
     # 4: validation rows
-    rows = [("Blind test, all 80 sources", "pre-registered folds", "+0.23 recall"),
+    rows = [("Pre-registered test", "all 80 sources, run once", "+0.23 recall"),
             ("Real cross-source pairs", "vs per-pair twins", "FPR \u2248 1%"),
             ("Real-burst copies", "vs template copies", "ratio 0.97"),
             ("Second-machine rerun", "data, sets, training", "7/7 hashes")]

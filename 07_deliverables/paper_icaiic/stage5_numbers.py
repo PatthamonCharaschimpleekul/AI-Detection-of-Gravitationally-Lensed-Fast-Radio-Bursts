@@ -100,7 +100,7 @@ def main():
     out["TbFrozenFPRGBM"] = f"{100 * float(frz['b3_gbm'][1]):.1f}" + r"\%"
     # transfer on held-out folds
     tr = (OUT / "folds_all" / "stage5_transfer.txt").read_text()
-    out["SfiveTransferPairs"] = re.search(r"(\d+) real cross-source pairs", tr).group(1)
+    out["SfiveTransferPairs"] = f"{int(re.search(r'(\d+) real cross-source pairs', tr).group(1)):,}".replace(",", "{,}")
     hd = tr.split("(headline)")[1]
     m6 = re.search(r"m6\s+([0-9.]+) \[([0-9.]+), ([0-9.]+)\].*?real~twin \+([0-9.]+) / ceiling \+([0-9.]+)", hd)
     out["SfiveTransferSix"] = f"{100 * float(m6.group(1)):.1f}\\% [{100 * float(m6.group(2)):.1f}, {100 * float(m6.group(3)):.1f}]"
