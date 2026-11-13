@@ -9,7 +9,7 @@
 \usepackage{textcomp}
 \usepackage{xcolor}
 \usepackage{booktabs}
-\usepackage[hyphens]{url}
+\usepackage{xurl}
 \graphicspath{{./}{../paper/}}
 \newcommand{\pending}[1]{\textcolor{red}{[#1]}}
 \input{../paper/numbers}
@@ -50,19 +50,17 @@ panita@it.kmitl.ac.th \\
 \begin{abstract}
 When a foreground galaxy lenses a fast radio burst (FRB), the burst reaches Earth twice, days to months apart, and the two
 copies differ only by propagation effects. Spotting such copies among the bursts of a repeating source is a pairwise
-verification problem with three complications: no real positive example exists, some negatives are \emph{impostors} that
-share a propagation imprint, and decisions must hold at a 1\% false-positive rate. We build a semi-synthetic benchmark from
-all 981 public dynamic spectra of the 83 repeating sources in the CHIME/FRB Catalog~2 and propose a 259k-parameter Siamese
-network that aligns the feature maps of the two bursts with a differentiable correlation layer before fusing them. In a
-pre-registered test run once over all 80 eligible sources, each scored by a model that never saw it, the network recovers
-\OofSix\ of lensed pairs at 1\% false-positive rate within the simulated nuisance ranges, against \OofGBM\ for the best
-physics- or feature-based baseline (paired gain \OofDiff). On the 20 held-out test sources alone the gain is \TbDiff.
-Ablations show that both the alignment and impostor training are needed. On real data, \SfiveTransferPairs\ cross-source
-pairs, which are known negatives, give a false-positive rate of \SfiveTransferSix\ at thresholds set on simulated twins of
-each pair; copies of a real burst are recognized as often as copies of its template; and the pipeline reproduces on a
-second machine. Finally, survey geometry limits discovery more than the classifier does: a transit telescope records both
-copies for only about 2\% of lenses, and an all-sky monitor would find about \GainAllSkyOne\ times more lensed repeaters
-among the same sources.
+verification problem with no real positive examples, adversarial \emph{impostor} negatives that share a propagation imprint,
+and a required false-positive rate of 1\%. We build a semi-synthetic benchmark from all 981 public dynamic spectra of the 83
+repeating sources in the CHIME/FRB Catalog~2 and propose a 259k-parameter Siamese network that aligns the feature maps of the
+two bursts with a differentiable correlation layer before fusing them. In a pre-registered test run once over all 80 eligible
+sources, each scored by a model that never saw it, the network recovers \OofSix\ of lensed pairs at 1\% false-positive rate
+within the simulated nuisance ranges, against \OofGBM\ for the best physics- or feature-based baseline (paired gain
+\OofDiff). Ablations show that both the alignment and impostor training are needed. On \SfiveTransferPairs\ real
+cross-source pairs, which are known negatives, the false-positive rate at simulated-twin thresholds is \SfiveTransferSix; copies of a real burst are
+recognized as often as copies of its template; and the pipeline reproduces on a second machine. Survey geometry
+limits discovery more than the classifier does: a transit telescope records both copies for only about 2\% of lenses,
+whereas an all-sky monitor would find about \GainAllSkyOne\ times more lensed repeaters among the same sources.
 \end{abstract}
 
 \begin{IEEEkeywords}

@@ -167,3 +167,19 @@ Earlier versions of this note said that the Stage 5 results were pushed at 16:06
 - **Rule for variant S:** fixed in plan 1400 (commit `1140f74`, 13:21), before any S run.
 
 **Paper (Sec. VI), new wording:** "the test was run before the nuisance ranges of the propagation model were formally signed off. Its result reached the shared repository only after the sign-off, whose record still lists the test as unopened, …". The Limitations section now says "run" in place of "opened".
+
+## Addendum 2026-11-14: authors, abstract length, final recheck
+- **Review mode:** ICAIIC 2027 does not state double-blind review; the submission page, the CFP page and the CFP PDF all say nothing about it. Under the IEEE default this means single-blind, so author names are included.
+- **Authors (IEEE template blocks):**
+  1. Patthamon Charaschimpleekul (Harbin Engineering University)
+  2. Watin Promfiy (KMITL, School of IT)
+  3. Panita Thusaranon (KMITL, School of IT), corresponding author
+- **Repository link:** replaces "withheld"; the repository is public (HTTP 200 without login). The link uses `xurl`, which removes 7 underfull lines in the Conclusion.
+- **Abstract:** 292 → 250 words, the IEEE guideline. The test-set-only gain (+0.323) was dropped from the abstract; it remains in the text and in Table I.
+- **Trims to fit 6 pages with the 3-column author block:**
+  - a validation-numbers sentence (now said in the Table I caption);
+  - the fold-variation sentence, shortened;
+  - the checkpoint parenthetical in Sensitivity;
+  - the Conclusion DOI, replaced by citation [20].
+- **Fact diff against `1c1bccf`** (the last version fully traced to code): no result number changed, and all citations are kept.
+- **Build:** 6 pages, letter size, 0 overfull boxes, 1 underfull box (the Index Terms line, from IEEEtran justification), no undefined references, no BibTeX warnings, no Type 3 fonts, all fonts embedded. Every page was checked visually.
