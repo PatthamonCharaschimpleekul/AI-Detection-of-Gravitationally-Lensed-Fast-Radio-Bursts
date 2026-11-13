@@ -16,16 +16,17 @@
 | 11-11 11:31 | team | Variants M, P, M+P: none adopted (plan 1300 rule, val only) | none: model 6 unchanged |
 | 11-11 12:40 | second | Stage 5 primary result: model 6 +0.226 [+0.067, +0.403] over the GBM | — |
 | 11-11 13:40 | team | Scattering sweep (val): sign-off not given | — |
-| 11-11 16:06 | second | Stage 5 results pushed to `poc-lr-limit` | the team can see the test result from here on |
+| 11-11 16:06 | second | Stage 5 results committed locally (merge `d7144c1`); not yet pushed | — |
 | 11-11 16:25 | team | Wide-scattering variant S: not adopted (plan 1400 rule, fixed at 14:00, val only) | none: model 6 unchanged |
 | 11-11 17:00 | team | 04_propagation sign-off, option A: ranges, frozen sets and methods unchanged | none |
 | 11-11 17:30 | team | `main` paper still written as "test sealed" | superseded |
+| 11-11 19:15 | second | Stage 5 results pushed to `poc-lr-limit` (first time on the shared repo) | the team can see the test result from here on |
 
 ## Why the pre-registered result still stands
 - **No choice after the opening changed anything the test measures.**
   - The sign-off changed nothing. The ranges, frozen sets, methods, metric, bootstrap and fold rules are the same.
   - The only candidate method after the opening (S) was rejected by a rule fixed before its runs, on val only.
-- **What the order costs.** The sign-off was *not blind* to the result. The paper says so in one sentence. Because it was a "keep everything" decision, it could not have been tuned to the test.
+- **What the order costs.** The test was *run* before the sign-off, but its result reached the shared repo only afterwards (see the 18:30 correction below). The sign-off was a "keep everything" decision, so it could not have been tuned to the test either way.
 - **What would break it** (not done, and not to be done):
   - changing ranges, methods or thresholds now and re-scoring the test;
   - choosing between test-scored variants.
@@ -155,3 +156,14 @@ Every hard-coded setting in the paper was traced to the code, the output files o
   - "191 of 200 of model 6's" became "191 of 200 false positives of model 6".
 
 **Build:** 6 pages, 0 overfull boxes, no undefined references, no BibTeX warnings, no Type 3 fonts, all fonts embedded. Every page was checked visually.
+
+## Correction 2026-11-13 18:30: the test result reached the shared repo after the sign-off
+Earlier versions of this note said that the Stage 5 results were pushed at 16:06 and that the sign-off was therefore not blind. That was wrong: 16:06 is the commit time of merge `d7144c1`, not its push time.
+
+**Evidence:**
+- **Push time** (`git reflog origin/poc-lr-limit` on the second machine): pushed at 2026-11-10 22:20 (`ccbd35a`, benchmark commit, no results), and next at 2026-11-11 19:15 (`d7144c1`, containing `104981f` and `a443a15`). There were no other pushes in between; the 19:15 push was a fast-forward.
+- **Team's sign-off record:** commit `65acac9` (16:40) still says "This does not open the test split" and "test unopened, benchmark-v1 not tagged".
+- **Team's paper on `main`:** commit `ee355a4` (16:48) still says "the test split stays sealed".
+- **Rule for variant S:** fixed in plan 1400 (commit `1140f74`, 13:21), before any S run.
+
+**Paper (Sec. VI), new wording:** "the test was run before the nuisance ranges of the propagation model were formally signed off. Its result reached the shared repository only after the sign-off, whose record still lists the test as unopened, …". The Limitations section now says "run" in place of "opened".

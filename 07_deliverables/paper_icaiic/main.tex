@@ -205,10 +205,11 @@ trigger replaced the fixed test split by five source-grouped folds over all 80 s
 fold). Settings were frozen, with one seed per fold and the final checkpoint, so every source is scored by a model that
 never saw it. A rehearsal on the 60 development sources gave \DiffOOF. The bootstrap pools one threshold across folds,
 which penalizes differences in score scale between fold models. We opened the test sources once, after all methods had been
-frozen at a version tag. One deviation must be reported: the test was opened before the nuisance ranges of the propagation
-model were formally signed off, so the sign-off, which came afterwards, was not blind to the result. It used validation
-pairs only, however, and left the ranges, the frozen sets and all methods unchanged; a wide-scattering training variant
-was rejected by a rule fixed before it was run. We therefore treat the result as the pre-registered comparison. The
+frozen at a version tag. One deviation must be reported: the test was run before the nuisance ranges of the propagation
+model were formally signed off. Its result reached the shared repository only after the sign-off, whose record still lists
+the test as unopened, and the sign-off used validation pairs only and left the ranges, the frozen sets and all methods
+unchanged; a wide-scattering training variant was rejected by a rule fixed before it was run. We therefore treat the
+result as the pre-registered comparison. The
 fixed-split test sets (20 sources) serve as secondary checks.
 
 \textbf{True-negative transfer.} Two bursts from different sources cannot be lensed copies, so real cross-source pairs are
@@ -403,7 +404,7 @@ Twin matching is what makes such a check interpretable. It separates gaps in the
 composition, and here it exposed a format mismatch between real and simulated data that no purely simulated benchmark would
 reveal. Pre-registration is what gives the single test run its weight: the criterion, comparator, metric, bootstrap and fold
 rules were fixed before the test sources were seen, and the gain on those sources matches the development estimate.
-Several limitations remain. The test was opened before the propagation nuisance ranges were formally signed off, and a
+Several limitations remain. The test was run before the propagation nuisance ranges were formally signed off, and a
 later sweep on validation pairs shows that scattering is the range that matters. Recall is unchanged up to a differential
 scattering time between the copies of $\tau_{600}=0.3$\,ms, but it falls to 0.57 of its value at 1\,ms, the top of the
 training range, and to 0.13 at 3\,ms. Extending training to 10\,ms raises the 3\,ms value only to 0.24. The physics fit,
