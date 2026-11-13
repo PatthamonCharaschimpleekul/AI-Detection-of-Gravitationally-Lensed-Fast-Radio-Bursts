@@ -127,9 +127,10 @@ def init(fold=None):
 
 def work(job):
     """job = (split, kind, seed list, wide, floor); exactly the call gen_set makes for a frozen pair."""
-    split, kind, seed, wide, floor, *bp = job  # optional 6th: bandpass augmentation (plan 2026-11-10_1300)
+    split, kind, seed, wide, floor, *ex = job  # optional 6th: bandpass (plan 2026-11-10_1300); 7th: tau_force (plan 2026-11-11_1300)
     P = POOLS[split]
-    xa, xb, ma, mb, y, info = make_pair(kind, np.random.default_rng(seed), P, wide, floor, bool(bp and bp[0]))
+    xa, xb, ma, mb, y, info = make_pair(kind, np.random.default_rng(seed), P, wide, floor, bool(ex and ex[0]),
+                                        tau_force=ex[1] if len(ex) > 1 else None)
     s, f = score_pair(xa, ma, xb, mb, P.c["freq_mhz"])
     return s, f, y, info["src_a"], min(info["snr_a"], info["snr_b"]), info["imp_type"], info["tmpl_a"], info["snr_a"]
 
