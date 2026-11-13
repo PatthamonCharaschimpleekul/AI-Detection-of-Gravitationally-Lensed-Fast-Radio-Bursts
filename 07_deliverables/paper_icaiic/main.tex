@@ -201,8 +201,9 @@ templates (16 per fold), with frozen settings, one seed per fold and the final c
 by a model that never saw it; a rehearsal on the 60 development sources gave \DiffOOF. The bootstrap uses a pooled threshold
 across folds, which penalises score-scale differences between fold models. The test sources were opened once, after all
 methods were frozen at a version tag. One deviation is disclosed: the test was opened before the nuisance ranges of the
-propagation model were formally signed off; the sign-off that followed kept the ranges and all methods unchanged, so the
-result stands as the pre-registered comparison.
+propagation model were formally signed off. The sign-off followed the test, so it was not blind to the result, but it used
+validation pairs only and kept the ranges, the frozen sets and all methods unchanged; the result therefore stands as the
+pre-registered comparison.
 The fixed-split test sets (20 sources) serve as secondary checks.
 
 \textbf{True-negative transfer.} Two bursts from different sources cannot be lensed copies, so real cross-source pairs are
