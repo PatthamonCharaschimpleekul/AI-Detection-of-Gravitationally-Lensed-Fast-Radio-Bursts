@@ -127,3 +127,31 @@ Every number in the paper was traced to an output file or an update. Every figur
   - The timing-test sentence is reworded.
   - "Quoted to one significant figure".
 - **Figures:** all five are now cited in the text.
+
+## Addendum 2026-11-13 17:00: full trace against code and outputs
+Every hard-coded setting in the paper was traced to the code, the output files or the team updates. All of them match.
+- **Data and injection:** `inject.py`
+  - 256×160 spectra, 0.983 ms samples, 4000-pair sets, time shift ±10 samples.
+  - I1 smoothing of 16 channels (25 MHz).
+  - 60/20/20 split by burst count; S/N floors 10 and 25.
+  - Default τ₆₀₀ cap of 1 ms ("the top of the training range").
+- **Training:** `train.py` and `run_all.sh`: 20,000 steps, batch 64, AdamW with lr 1e-3 and weight decay 1e-4, 1000 warm-up steps, cosine decay.
+- **Model 6:** `models.py`: asinh input, four 5×3 convolution blocks with GroupNorm, c = 64 at 16×80, MAXLAG 12, a learned β, two convolution blocks after fusion, mean+max pooling, and the correlation profile fed to the head.
+- **Baselines:** `baselines.py`: ±24 lags, 16 channel blocks, 7 GBM features per member.
+- **Stage 5 transfer:** all four methods pass; model 6 has 0.010 [0.005, 0.018] and ρ 0.91 / 0.90.
+- **Claims from team updates:**
+  - single-member probe AUC 0.519 ± 0.009 (update 1335);
+  - hard negatives bias the likelihood ratio by about 1 dex (tail-NRE POC);
+  - 12 trained models and 3 baselines;
+  - lower transit above δ = 70°;
+  - 4σ delay match with a 4 ms median timing error;
+  - host DM 68 → 150 changes the yield by −19%.
+
+**Fixes:**
+- **Table II and the Ablations text:** "No alignment (correlation off)" became "No soft alignment". With `align=False` the correlation profile is still fed to the head; only the soft alignment is off.
+- **Wording:**
+  - "noting that…" was a dangling participle; it became "which its authors say…".
+  - A doubled "and" in the deviation sentence became a semicolon.
+  - "191 of 200 of model 6's" became "191 of 200 false positives of model 6".
+
+**Build:** 6 pages, 0 overfull boxes, no undefined references, no BibTeX warnings, no Type 3 fonts, all fonts embedded. Every page was checked visually.

@@ -101,7 +101,7 @@ comparing them.
 
 \textbf{Lensed-pair identification.} For gravitational waves, lensed event pairs have been identified with a DenseNet and
 gradient boosting~\cite{Goyal2021}, and with a Siamese residual network that fuses features by absolute difference and
-product~\cite{Zhang2026}, noting that it still needs adapting to real detector data. FRB lensing searches have
+product~\cite{Zhang2026}, which its authors say still needs adapting to real detector data. FRB lensing searches have
 relied on auto- and cross-correlation statistics~\cite{Kader2022,Chang2024,Krochek2022}, and machine learning on FRBs has
 separated repeating from non-repeating sources~\cite{Chen2022}. As far as we know, no learned detector of lensed FRB copies
 exists. Randomizing nuisance parameters makes detectors trained on simulation more robust~\cite{Tobin2017}, but their
@@ -207,7 +207,7 @@ never saw it. A rehearsal on the 60 development sources gave \DiffOOF. The boots
 which penalizes differences in score scale between fold models. We opened the test sources once, after all methods had been
 frozen at a version tag. One deviation must be reported: the test was opened before the nuisance ranges of the propagation
 model were formally signed off, so the sign-off, which came afterwards, was not blind to the result. It used validation
-pairs only, however, and left the ranges, the frozen sets and all methods unchanged, and a wide-scattering training variant
+pairs only, however, and left the ranges, the frozen sets and all methods unchanged; a wide-scattering training variant
 was rejected by a rule fixed before it was run. We therefore treat the result as the pre-registered comparison. The
 fixed-split test sets (20 sources) serve as secondary checks.
 
@@ -285,8 +285,8 @@ validation set.}
 \textbf{Sensitivity and errors.} On the test sources the gain holds in every S/N bin (Fig.~\ref{fig:snr}). Every method
 recalls less than on validation (Table~\ref{tab:main}), the untrained cross-correlation and physics fit included, which
 suggests that the test sources are intrinsically harder, beyond being unused in development (model 6's checkpoints and the
-choice of the GBM were both made on validation). At the pooled 1\% threshold of the primary test, \OofFPenv\ of model 6's
-false positives are impostors with a shared envelope (I1 or I1+I2) and only \OofFPrepeat\ are plain repeats, so the
+choice of the GBM were both made on validation). At the pooled 1\% threshold of the primary test, \OofFPenv\ false positives of
+model 6 are impostors with a shared envelope (I1 or I1+I2) and only \OofFPrepeat\ are plain repeats, so the
 remaining errors sit in the physically hardest case. Model 6 (seed 0) labels 95\% of lensed pairs
 from unseen sources correctly but only 32\% of their repeat pairs, compared with 86\% on training sources. It mostly calls
 the unseen repeats unrelated, so part of its capacity memorizes source identity. Three training variants aimed at this
@@ -304,14 +304,14 @@ from the full model (validation bright set, 95\% source bootstrap).}
 Variant & Recall & Difference \\
 \midrule
 Full model & \AblFull & \\
-No alignment (correlation off) & \AblNoalignR & \AblNoalignD \\
+No soft alignment & \AblNoalignR & \AblNoalignD \\
 No impostors in training & \AblNoimpR & \AblNoimpD \\
 Hard-negative repeats & \AblHardnegR & \AblHardnegD \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\textbf{Ablations.} Removing the alignment, or training without impostors, lowers recall in every seed (Table~\ref{tab:abl}).
+\textbf{Ablations.} Removing the soft alignment, or training without impostors, lowers recall in every seed (Table~\ref{tab:abl}).
 Without impostors in training, the network takes envelope-sharing bursts of one source for copies. Oversampling repeats with
 similar templates helps slightly in every seed, but its interval includes zero, and on a closed-form benchmark the same
 scheme biased a learned likelihood ratio low by about 1\,dex, so we do not adopt it without a correction. Among the
