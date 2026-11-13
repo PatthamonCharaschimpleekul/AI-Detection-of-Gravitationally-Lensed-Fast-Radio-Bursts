@@ -183,3 +183,15 @@ Earlier versions of this note said that the Stage 5 results were pushed at 16:06
   - the Conclusion DOI, replaced by citation [20].
 - **Fact diff against `1c1bccf`** (the last version fully traced to code): no result number changed, and all citations are kept.
 - **Build:** 6 pages, letter size, 0 overfull boxes, 1 underfull box (the Index Terms line, from IEEEtran justification), no undefined references, no BibTeX warnings, no Type 3 fonts, all fonts embedded. Every page was checked visually.
+
+## Addendum 2026-11-14 (later): title with U, observation model, no repository link
+- **Title:** "259k Parameters to Recognize $U$: Siamese Alignment of Lensed Fast Radio Bursts" (2 lines). The 259k is checked against `models.py`: model 6 has 259,365 parameters.
+- **Sec. III:** an observation model, $X=\mathcal{P}_\theta(U)+N$, where $U$ is the intrinsic burst (the template).
+  - A lensed pair has $U_A=U_B$ with independent $\theta$; a repeat has $U_A\neq U_B$; an impostor is a repeat with a shared propagation imprint.
+  - This matches the injection code.
+  - The recall is now conditioned on $U_A=U_B$.
+  - The unrelated-class symbol changed from $\textsc{u}$ to $\textsc{d}$, so it does not clash with $U$.
+- **Repository:** the GitHub link was removed at the user's request. The Conclusion now says the code, manifests, hashes and plans are "available from the authors on request". `xurl` was removed. Sec. VI now says "the team's shared repository".
+- **Trims to stay at 6 pages:** four sentences tightened (no content dropped), the memorization-variant clause shortened, and Fig. 5 width changed from 0.95 to 0.88 column.
+- **Fact diff against `395e0d7`:** no result number changed, and all citations are kept.
+- **Build:** 6 pages, 0 overfull boxes, no undefined references, no BibTeX warnings, no Type 3 fonts. Pages checked visually.
