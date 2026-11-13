@@ -22,14 +22,27 @@
 
 \title{Learning to Recognize Gravitationally Lensed Fast Radio Bursts Without Real Positives}
 
-\author{\IEEEauthorblockN{Patthamon Charaschimpleekul\IEEEauthorrefmark{1},
-Watin Promfiy\IEEEauthorrefmark{2} and
-Panita Thusaranon\IEEEauthorrefmark{2}}
-\IEEEauthorblockA{\IEEEauthorrefmark{1}College of Intelligent Systems Science and Engineering, Harbin Engineering University,
-Harbin, China}
-\IEEEauthorblockA{\IEEEauthorrefmark{2}King Mongkut's Institute of Technology Ladkrabang, Bangkok, Thailand}
-\IEEEauthorblockA{patthamon.chr@gmail.com, 66070184@kmitl.ac.th, panita@it.kmitl.ac.th\\
-Corresponding author: Watin Promfiy}
+\author{\IEEEauthorblockN{1\textsuperscript{st} Patthamon Charaschimpleekul}
+\IEEEauthorblockA{\textit{College of Intelligent Systems} \\
+\textit{Science and Engineering} \\
+\textit{Harbin Engineering University}\\
+Harbin, China \\
+patthamon.chr@gmail.com}
+\and
+\IEEEauthorblockN{2\textsuperscript{nd} Watin Promfiy}
+\IEEEauthorblockA{\textit{School of Information Technology} \\
+\textit{King Mongkut's Institute of} \\
+\textit{Technology Ladkrabang}\\
+Bangkok, Thailand \\
+66070184@kmitl.ac.th \\
+*Corresponding author}
+\and
+\IEEEauthorblockN{3\textsuperscript{rd} Panita Thusaranon}
+\IEEEauthorblockA{\textit{School of Information Technology} \\
+\textit{King Mongkut's Institute of} \\
+\textit{Technology Ladkrabang}\\
+Bangkok, Thailand \\
+panita@it.kmitl.ac.th}
 }
 
 \maketitle
@@ -156,8 +169,7 @@ lensed from repeat pairs. Probes that look at one member at a time cannot tell t
 \textbf{Splits and frozen sets.} Whole sources are assigned to train, validation or test, 60/20/20 by burst count.
 Validation and test sets of 4000 pairs, and ``bright'' sets with pair minimum S/N\,$\ge25$ (the pre-registered headline
 bin), are regenerated from fixed seeds and checked against stored SHA-256 hashes. The test split stayed sealed under the
-pre-registered protocol until the single test run (Section~\ref{sec:validation}). Validation numbers are development
-results, although on sources never used in training.
+pre-registered protocol until the single test run (Section~\ref{sec:validation}).
 
 \section{Siamese Correlation Network}
 \label{sec:method}
@@ -221,7 +233,7 @@ known negatives that we can score without opening the search on same-source pair
 \emph{twins} from the same two templates at their measured S/N and put the threshold at the 99th percentile of the twins.
 The pre-registered criterion is a real false-positive rate of at most 2\% in each S/N bin. Matching the twins to the pairs
 matters. Against generic simulated pairs, cross-correlation seems to fail below S/N\,25 (\BoneLowReal), but its own twins
-fail just as often (\BoneLowTwin) because those real pairs are brighter than generic ones. The apparent failure comes from
+fail just as often (\BoneLowTwin) because those real pairs are brighter than generic ones, so the apparent failure comes from
 sample composition.
 
 \textbf{Real-burst positives.} As a stand-in for lensed pairs, we inject two copies of a real burst's cutout, which keeps
@@ -275,8 +287,8 @@ model 6 more than the GBM. The gain agrees with the development rehearsal (\Diff
 validation and \TbDiff\ on the 20 test sources, where the second machine's seeds stand in for model 6. On validation, every
 learned model that trained scores above all three baselines. The AUCs are
 much closer (\OofAucSix\ against \OofAucGBM), which places the gain in the low-false-positive tail where a search operates.
-With 16 sources per fold, recall varies from fold to fold (\OofFoldRangeSix\ for model 6, \OofFoldRangeGBM\ for the GBM),
-and the source bootstrap carries this spread into the interval.
+Recall varies between folds (\OofFoldRangeSix\ for model 6, \OofFoldRangeGBM\ for the GBM), a spread
+that the source bootstrap carries into the interval.
 
 \begin{figure}[t]
 \centering
@@ -289,8 +301,7 @@ validation set.}
 
 \textbf{Sensitivity and errors.} On the test sources the gain holds in every S/N bin (Fig.~\ref{fig:snr}). Every method
 recalls less than on validation (Table~\ref{tab:main}), the untrained cross-correlation and physics fit included, which
-suggests that the test sources are intrinsically harder, beyond being unused in development (model 6's checkpoints and the
-choice of the GBM were both made on validation). At the pooled 1\% threshold of the primary test, \OofFPenv\ false positives of
+suggests that the test sources are intrinsically harder. At the pooled 1\% threshold of the primary test, \OofFPenv\ false positives of
 model 6 are impostors with a shared envelope (I1 or I1+I2) and only \OofFPrepeat\ are plain repeats, so the
 remaining errors sit in the physically hardest case. Model 6 (seed 0) labels 95\% of lensed pairs
 from unseen sources correctly but only 32\% of their repeat pairs, compared with 86\% on training sources. It mostly calls
@@ -426,7 +437,7 @@ as often as physics and feature baselines at a 1\% false-positive rate, within t
 pre-registered test run once over all sources. It passes real-data checks designed for a detector without real positives,
 and it reproduces on a second machine. The same analysis shows that transit geometry is a bigger obstacle to finding lensed
 repeaters than classification accuracy, which points detectors of this kind toward wide-field radio arrays. All inputs are
-public (CHIME/FRB Catalog~2, DOI 10.11570/25.0066), and the code, frozen-set manifests, hashes and pre-registered plans are
+public (CHIME/FRB Catalog~2~\cite{CHIME2025cat2}), and the code, frozen-set manifests, hashes and pre-registered plans are
 in the project repository, \url{https://github.com/PatthamonCharaschimpleekul/AI-Detection-of-Gravitationally-Lensed-Fast-Radio-Bursts}.
 
 \bibliographystyle{IEEEtran}
