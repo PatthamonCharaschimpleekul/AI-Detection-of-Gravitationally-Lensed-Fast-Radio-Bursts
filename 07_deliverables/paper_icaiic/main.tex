@@ -126,7 +126,7 @@ transfer still has to be shown on real data.
 A burst is observed as a dynamic spectrum $X\in\mathbb{R}^{F\times T}$ ($F=256$ channels, $T=160$ samples of 0.983\,ms,
 unit off-pulse noise), which we model as an intrinsic burst $U$ seen through one propagation path, $X=\mathcal{P}_\theta(U)+N$:
 $\mathcal{P}_\theta$ applies the path's time shift, residual dispersion, scattering, scintillation and amplitude, and $N$ is
-real noise. A pair $(A,B)$ from one sky position is lensed ($\textsc{l}$) if $U_A=U_B$ with independent $\theta_A$,
+real noise. A pair $(A,B)$ of bursts is lensed ($\textsc{l}$) if $U_A=U_B$ with independent $\theta_A$,
 $\theta_B$, and otherwise a repeat ($\textsc{r}$, one source), unrelated ($\textsc{d}$, different sources) or impostor
 ($\textsc{i}$, a repeat whose members share a propagation imprint). Finding a lensed pair thus means recognizing the same
 $U$ behind two differently propagated copies. A detector outputs a symmetric score $s(A,B)=s(B,A)$ and flags a pair when $s>\tau_\alpha$, where

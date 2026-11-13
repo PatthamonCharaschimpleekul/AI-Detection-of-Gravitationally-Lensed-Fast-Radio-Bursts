@@ -195,3 +195,12 @@ Earlier versions of this note said that the Stage 5 results were pushed at 16:06
 - **Trims to stay at 6 pages:** four sentences tightened (no content dropped), the memorization-variant clause shortened, and Fig. 5 width changed from 0.95 to 0.88 column.
 - **Fact diff against `395e0d7`:** no result number changed, and all citations are kept.
 - **Build:** 6 pages, 0 overfull boxes, no undefined references, no BibTeX warnings, no Type 3 fonts. Pages checked visually.
+
+## Addendum 2026-11-14: final recheck after the title change
+- **Remote:** fetched; nothing new.
+- **Macros:** regenerate identically.
+- **Clean rebuild:** 6 pages, letter size, 0 overfull boxes, 1 underfull box (the Index Terms line), no undefined references or multiply-defined labels, no BibTeX warnings, no Type 3 fonts, all fonts embedded, no `\pending`.
+- **Abstract:** 250 words.
+- **Fact diff against `1c1bccf`** (the last version fully traced to code): only intended changes, namely the title, the authors, the abstract, the trims, and the DOI replaced by citation [20]. No result number changed.
+- **Observation model $X=\mathcal{P}_\theta(U)+N$:** checked against `inject.member` and `make_pair`. Each member has its own template, S/N, real background, shift, DM and scintillation, and one member is scattered. Impostors share an I1 gain or an I2 scintillation.
+- **Fix:** "A pair (A,B) from one sky position is lensed…" became "A pair (A,B) of bursts is lensed…", because unrelated pairs come from two sources.
