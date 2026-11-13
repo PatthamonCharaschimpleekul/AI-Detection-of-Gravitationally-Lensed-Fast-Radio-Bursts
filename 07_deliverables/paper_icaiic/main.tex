@@ -168,7 +168,7 @@ and product. The correlation profile also feeds the head. Both input orders are 
 \end{figure*}
 
 \textbf{Encoder.} Inputs first pass through $\mathrm{asinh}$, which compresses the dynamic range of bright bursts. A shared
-encoder $g$ of four $5\times3$ convolution blocks with group normalization maps $X$ to
+encoder $g$ (Fig.~\ref{fig:arch}) of four $5\times3$ convolution blocks with group normalization maps $X$ to
 $g(X)\in\mathbb{R}^{C\times F'\times T'}$ with $C=64$, $F'=16$ and $T'=80$. We keep two-sample time resolution because
 lensed copies differ by residual time offsets.
 
@@ -361,8 +361,8 @@ same-source pairs of Catalog~2 take about 70\,s.
 \section{Survey Geometry: Where Can the Detector Work?}
 \label{sec:geometry}
 A lensed repeater can also be found without a classifier. A galaxy lens fixes $\Delta t$ far more precisely than the
-catalog's 4\,ms timing, so two burst pairs $(i,j)$ and $(k,l)$ of one source whose delays agree within four combined timing
-errors, $|\Delta t_{ij}-\Delta t_{kl}|$, already form a significant pattern. We calibrated this timing test on burst lists
+catalog's 4\,ms timing, so two burst pairs $(i,j)$ and $(k,l)$ of one source with $|\Delta t_{ij}-\Delta t_{kl}|$ below four combined
+timing errors already form a significant pattern. We calibrated this timing test on burst lists
 scrambled by whole sidereal days, which preserves each burst's hour angle, and confirmed its false-alarm rate on independent
 scrambles (\FarHeldOut).
 
@@ -389,7 +389,7 @@ bursts~\cite{ConnorRavi2022}.
 \end{figure}
 
 The expected number of detectable lensed repeaters in the Catalog~2 sample is \NexpLo\ without magnification bias and
-\NexpHi\ with it (slope 1.5), to one significant figure because independent Monte Carlo reruns differ by tens of percent. A
+\NexpHi\ with it (slope 1.5), quoted to one significant figure because independent Monte Carlo reruns differ by tens of percent. A
 null search is the expected outcome. A 10-year transit survey gains less than a factor of two, because the
 alignment requirement remains, whereas an all-sky monitor watching the same sources gains a factor of about
 \GainAllSkyOne. Raising the median host-galaxy dispersion measure from 68 to 150\,pc\,cm$^{-3}$ changes the yield by about

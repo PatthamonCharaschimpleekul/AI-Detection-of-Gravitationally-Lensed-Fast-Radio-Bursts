@@ -116,3 +116,14 @@ Every number in the paper was traced to an output file or an update. Every figur
   - **Limitations:** "Training to 10 ms does not recover it" became "Extending training to 10 ms raises the 3 ms value only to 0.24" (update 1630: ratio 0.13 → 0.24).
 
 **Build:** 6 pages, 0 overfull boxes, no undefined references, no BibTeX warnings, no Type 3 fonts, all fonts embedded. Every page and figure was checked visually.
+
+## Addendum 2026-11-13 15:00: final recheck
+- **Remote:** fetched; nothing new on origin.
+- **Macros:** the Stage 5 and ICAIIC macros regenerate to identical values.
+- **Clean rebuild:** 6 pages, letter size, 0 overfull boxes, no undefined references, no BibTeX warnings, no Type 3 fonts, all fonts embedded, no `\pending`.
+- **One underfull box** (badness 10000), in the Index Terms line. It is cosmetic and comes from IEEEtran's keyword justification.
+- **Fixes:**
+  - Fig. 3 was never cited in the text; it is now cited at the encoder.
+  - The timing-test sentence is reworded.
+  - "Quoted to one significant figure".
+- **Figures:** all five are now cited in the text.
