@@ -201,10 +201,10 @@ can sharpen or soften through $\beta$.
 and then mean and max pooling. An MLP takes the pooled features together with $\rho$ and outputs four logits $z$. The lensed
 score is the log-odds of the lensed class against the others, averaged over both input orders to make it symmetric:
 \begin{equation}
-s(A,B)=\tfrac12\left[\sigma(A,B)+\sigma(B,A)\right],\quad \sigma=z_{\textsc{l}}-\log\!\sum_{c\neq\textsc{l}}e^{z_c}.
+s(A,B)=\tfrac12\left(\sigma_{AB}+\sigma_{BA}\right),\quad \sigma=z_{\textsc{l}}-\log\!\sum_{c\neq\textsc{l}}e^{z_c},
 \label{eq:score}
 \end{equation}
-The model has 259k parameters.
+where $\sigma_{AB}$ is computed with $A$ as the first input. The model has 259k parameters.
 
 \textbf{Training.} All learned models are trained for 20{,}000 steps on batches of 64 pairs drawn on the fly from training
 sources (half with an S/N floor of 10, half with 25), using four-class cross-entropy, AdamW (learning rate $10^{-3}$, weight

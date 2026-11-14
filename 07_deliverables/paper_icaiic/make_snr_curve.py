@@ -93,7 +93,7 @@ def plot(curves, val_m6=None):
     fig, ax = plt.subplots(figsize=(3.4, 2.5))
     greys = ["#b9b8b3", "#85847f", INK]
     for name, c in zip(NAMES, greys):
-        ax.plot(x, curves[name], "-o", color=c, lw=1.6, ms=4, mec="white", mew=0.8, label=name)
+        ax.plot(x, curves[name], "-o", color=c, lw=1.6, ms=4, mec="white", mew=0.8, label=name.replace(" (16)", ""))  # "(16)": 16-channel blocks, stated in the text
     m = np.array([curves[f"Model 6 s{s}"] for s in range(3)])
     ax.fill_between(x, m.min(0), m.max(0), color=BLUE, alpha=0.18, lw=0)
     ax.plot(x, m.mean(0), "-o", color=BLUE, lw=2, ms=4.5, mec="white", mew=0.8, label="Model 6 (3 seeds)")

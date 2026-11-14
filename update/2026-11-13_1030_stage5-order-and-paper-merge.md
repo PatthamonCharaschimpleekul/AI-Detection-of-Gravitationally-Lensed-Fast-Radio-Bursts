@@ -204,3 +204,11 @@ Earlier versions of this note said that the Stage 5 results were pushed at 16:06
 - **Fact diff against `1c1bccf`** (the last version fully traced to code): only intended changes, namely the title, the authors, the abstract, the trims, and the DOI replaced by citation [20]. No result number changed.
 - **Observation model $X=\mathcal{P}_\theta(U)+N$:** checked against `inject.member` and `make_pair`. Each member has its own template, S/N, real background, shift, DM and scintillation, and one member is scattered. Impostors share an I1 gain or an I2 scintillation.
 - **Fix:** "A pair (A,B) from one sky position is lensed…" became "A pair (A,B) of bursts is lensed…", because unrelated pairs come from two sources.
+
+## Addendum 2026-11-14, visual recheck
+
+- Eq. (3): number had dropped to its own line; now written with sigma_AB / sigma_BA (plus one clause defining sigma_AB), fits on one line. No change in meaning.
+- Fig. 1: "new propagation imprint" ran past the panel (a) border (moved left); subscript "sid" touched the line below in panel (b) (rows re-spaced); the Δt label sat on its arrow (raised).
+- Fig. 2: subscripts in panel 3 list touched the next line (line spacing 10 to 11-12 units).
+- Fig. 4: legend "(16)" dropped (16-channel blocks are stated in the text); data and script keys unchanged.
+- Rebuilt: 6 pages, letter, 0 overfull, no undefined refs, no Type 3 fonts. Fact diff vs d6ec69a: no number, macro or citation change.

@@ -239,8 +239,8 @@ def fig_concept():
     c2 = dispersed(12, scint=0.45, amp=0.7, scat=2.5)
     b.append(tile(386, 34, 56, 44, c1, border=BLUE, bw=1.1))
     b.append(tile(386, 114, 56, 44, c2, border=ORANGE, bw=1.1))
-    b.append(text(414, 30, "copy 1", "tx", "middle") + text(414, 170, "copy 2: same burst,", "tx", "middle"))
-    b.append(text(414, 179, "new propagation imprint", "tx", "middle"))
+    b.append(text(414, 30, "copy 1", "tx", "middle") + text(402, 170, "copy 2: same burst,", "tx", "middle"))
+    b.append(text(402, 179, "new propagation imprint", "tx", "middle"))
     b.append(text(382, 40, "800", "tx", "end") + text(382, 78, "400", "tx", "end") + text(382, 59, "MHz", "tx", "end"))
     # burst timeline: every burst repeats after the same delay
     ty = 196
@@ -252,7 +252,7 @@ def fig_concept():
         b.append(f'<line x1="{t}" y1="{ty - 9}" x2="{t}" y2="{ty}" stroke="{BLUE}" stroke-width="2"/>')
         b.append(f'<line x1="{t + dt}" y1="{ty - 6}" x2="{t + dt}" y2="{ty}" stroke="{ORANGE}" stroke-width="2"/>')
     b.append(f'<path d="M{t1[0]},{ty - 13} L{t1[0] + dt},{ty - 13}" stroke="{INK2}" stroke-width="0.8" marker-start="url(#ah)" marker-end="url(#ah)"/>')
-    b.append(text(t1[0] + dt / 2, ty - 16, "Δt of days to months, identical for every burst", "tx", "middle"))
+    b.append(text(t1[0] + dt / 2, ty - 18, "Δt of days to months, identical for every burst", "tx", "middle"))
     # panel (b): transit alignment
     X0 = 464
     b.append(rect(X0, 4, 248, 206, fill="#ffffff", stroke=LINE, rx=6))
@@ -264,7 +264,7 @@ def fig_concept():
     win = 6.0
 
     def row(y, label, sub, frac, ok):
-        out = [text(ax0, y - 31, label, "tb"), text(ax0, y - 21, sub, "tx")]
+        out = [text(ax0, y - 33, label, "tb"), text(ax0, y - 19, sub, "tx")]
         out.append(f'<line x1="{ax0}" y1="{y}" x2="{ax1}" y2="{y}" stroke="{INK2}" stroke-width="0.8"/>')
         for d in range(days):
             cx = ax0 + per * (d + 0.5)
@@ -278,7 +278,7 @@ def fig_concept():
             out.append(f'<line x1="{cc:.1f}" y1="{y - 8}" x2="{cc:.1f}" y2="{y}" stroke="{col}" stroke-width="2"' + ("" if ok else ' stroke-dasharray="2 1.5"') + '/>')
             out.append(f'<path d="M{cx:.1f},{y + 6} Q{(cx + cc) / 2:.1f},{y + 18} {cc:.1f},{y + 6}" stroke="{col}" stroke-width="0.7" fill="none" marker-end="url(#{"aho" if ok else "ah"})"/>')
         mark = "✓ copies recorded" if ok else "✗ copies missed"
-        out.append(text(ax1, y - 31, mark, "ts", "end", f'fill="{GREEN if ok else ORANGE}"'))
+        out.append(text(ax1, y - 33, mark, "ts", "end", f'fill="{GREEN if ok else ORANGE}"'))
         return out
 
     b += row(94, "Δt ≠ n·T_sid", "copies arrive between transits", 0.37, False)
@@ -345,9 +345,9 @@ def fig_workflow(reals, pairs):
     b.append(text(494, y0 + 31, "fuse", "tx", "middle"))
     b.append(arrow(481, y0 + 28, 484, y0 + 28))
     b.append(text(364, y0 + 74, "1. shared encoder, 2-sample resolution", "tx"))
-    b.append(text(364, y0 + 84, "2. soft alignment over ±24 samples", "tx"))
-    b.append(text(364, y0 + 94, "3. fuse |g_A − g_B| and g_A ⊙ g_B", "tx"))
-    b.append(text(364, y0 + 104, "4. 4-class head → score s(A, B)", "tx"))
+    b.append(text(364, y0 + 85, "2. soft alignment over ±24 samples", "tx"))
+    b.append(text(364, y0 + 96, "3. fuse |g_A − g_B| and g_A ⊙ g_B", "tx"))
+    b.append(text(364, y0 + 108, "4. 4-class head → score s(A, B)", "tx"))
     b.append(rect(364, 152, 136, 20, fill=BLUE_SOFT, stroke="none", rx=4))
     b.append(text(432, 165, "259k parameters", "t", "middle", f'fill="{BLUE}"'))
     # 4: validation rows
