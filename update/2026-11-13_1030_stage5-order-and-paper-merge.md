@@ -212,3 +212,8 @@ Earlier versions of this note said that the Stage 5 results were pushed at 16:06
 - Fig. 2: subscripts in panel 3 list touched the next line (line spacing 10 to 11-12 units).
 - Fig. 4: legend "(16)" dropped (16-channel blocks are stated in the text); data and script keys unchanged.
 - Rebuilt: 6 pages, letter, 0 overfull, no undefined refs, no Type 3 fonts. Fact diff vs d6ec69a: no number, macro or citation change.
+
+## Addendum 2026-11-14, Fig. 5 for ICAIIC
+
+- New `07_deliverables/paper_icaiic/make_transit_icaiic.py` writes an ICAIIC copy of `fig_transit.pdf` (found first via `\graphicspath`): same inputs and computation as `../paper/make_figures.py`, dashed line labelled "Eq. (4): 2W(δ)/T_sid" and y-axis headroom so the top point no longer touches the frame. The MNRAS figure is untouched.
+- Rebuilt: 6 pages, letter, 0 overfull, no Type 3 fonts; page 5 layout unchanged.
