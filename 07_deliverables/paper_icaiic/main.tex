@@ -9,6 +9,7 @@
 \usepackage{textcomp}
 \usepackage{xcolor}
 \usepackage{booktabs}
+\usepackage{balance}
 \graphicspath{{./}{../paper/}}
 \newcommand{\pending}[1]{\textcolor{red}{[#1]}}
 \input{../paper/numbers}
@@ -21,6 +22,14 @@
 
 \title{259k Parameters to Recognize $U$: Siamese Alignment of Lensed Fast Radio Bursts}
 
+% Author names: main.tex builds the named version (camera-ready); main_anonymous.tex defines \anonymoussubmission and
+% inputs this file, building the version without names that the team chose for the submission.
+\newif\ifanonymous
+\ifdefined\anonymoussubmission\anonymoustrue\fi
+\ifanonymous
+\author{\IEEEauthorblockN{Anonymous Authors}
+\IEEEauthorblockA{Names and affiliations withheld for review}}
+\else
 \author{\IEEEauthorblockN{1\textsuperscript{st} Patthamon Charaschimpleekul}
 \IEEEauthorblockA{\textit{College of Intelligent Systems} \\
 \textit{Science and Engineering} \\
@@ -43,6 +52,7 @@ Bangkok, Thailand \\
 panita@it.kmitl.ac.th \\
 *Corresponding author}
 }
+\fi
 
 \maketitle
 
@@ -436,6 +446,7 @@ repeaters than classification accuracy, which points detectors of this kind towa
 public (CHIME/FRB Catalog~2~\cite{CHIME2025cat2}), and the code, frozen-set manifests, hashes and pre-registered plans are
 available from the authors on request.
 
+\balance  % even columns on the last page
 \bibliographystyle{IEEEtran}
 \bibliography{references_icaiic}
 
